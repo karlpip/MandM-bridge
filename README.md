@@ -13,7 +13,7 @@ ICE is used to communicate with the murmur server, matrix-nio is used for matrix
   - [X] Handler: Delete html tags from links postged in mumble.
 - [ ] WIP: Bridge images.
 - [ ] Make bridged murmur channels configurable.
-- [ ] Bridge mumble join / leave events.
+- [ ] Bridge join / leave events.
 
 ## Setup
 

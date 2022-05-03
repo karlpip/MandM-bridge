@@ -15,7 +15,7 @@ ICE is used to communicate with the murmur server, matrix-nio is used for matrix
   - [X] Bridge images from matrix to mumble
   - [ ] Bridge images from mumble to matrix
 - [ ] Make bridged murmur channels configurable.
-- [ ] WIP: Bridge mumble join / leave events.
+- [X] Bridge mumble join / leave events.
 
 ## Setup
 

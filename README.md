@@ -1,7 +1,7 @@
 # matrix2murmur
 
 Bridges between a Murmurserver(currently listening on every channel) and a matrix channel. \
-ICE is used to communicate with the murmur server, matrix-nio is used for matrix. \
+ICE is used to communicate with the murmur server, matrix-nio is used for matrix.
 
 ## Features
 

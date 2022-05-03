@@ -104,7 +104,8 @@ class MurmurInterface():
             logging.debug("channel %s not found" % channel)
             return False
         self.server.sendMessageChannel(self.channels[channel], False, msg)
-        logging.debug("sent %s to channel %s" % (msg, channel))
+        if len(msg) < 500:
+            logging.debug("sent %s to channel %s" % (msg, channel))
 
     def send_msg(self, msg: str):
         for channel in self.channels:

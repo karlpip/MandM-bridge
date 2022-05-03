@@ -11,9 +11,11 @@ ICE is used to communicate with the murmur server, matrix-nio is used for matrix
   - [X] Handler: Dont bridge private mumble messages.
   - [X] Handler: Dont bridge botamusique (https://github.com/azlux/botamusique, check it out!) messages.
   - [X] Handler: Delete html tags from links postged in mumble.
-- [ ] WIP: Bridge images.
+- [ ] Bridge images.
+  - [X] Bridge images from matrix to mumble
+  - [ ] Bridge images from mumble to matrix
 - [ ] Make bridged murmur channels configurable.
-- [ ] Bridge join / leave events.
+- [ ] WIP: Bridge mumble join / leave events.
 
 ## Setup
 

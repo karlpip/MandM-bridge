@@ -1,6 +1,6 @@
 # matrix2murmur
 
-Bridges between a Murmurserver(currently listening on every channel) and a matrix channel. \
+Bridges between a Murmur server and a matrix channel.\
 ICE is used to communicate with the murmur server, matrix-nio is used for matrix.
 
 ## Features
@@ -8,10 +8,11 @@ ICE is used to communicate with the murmur server, matrix-nio is used for matrix
 - [X] Bridge text messages.
 - [ ] Implement optional message handlers to easily modify, filter and save messages before bridging.
   - [ ] Configure which handler should be active in config file.
-  - [X] Handler: Dont bridge private mumble messages
+  - [X] Handler: Dont bridge private mumble messages.
   - [X] Handler: Dont bridge botamusique (https://github.com/azlux/botamusique, check it out!) messages.
-  - [X] Handler: Delete html tags from links postged in mumble
+  - [X] Handler: Delete html tags from links postged in mumble.
 - [ ] WIP: Bridge images.
+- [ ] WIP: Make bridged murmur channels configurable.
 
 ## Setup
 

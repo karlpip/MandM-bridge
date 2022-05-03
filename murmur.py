@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import pprint
 from typing import Callable, List, Any, Tuple
 
 
@@ -9,41 +10,67 @@ import Murmur
 
 
 class ServerCallbacks(Murmur.ServerCallback):
-    def __init__(self, cb: Callable[[str], bool], loop: asyncio.AbstractEventLoop, msg_handlers: List[Callable[[any, any], Tuple[bool, any]]]):
-        self.cb = cb
+    def __init__(
+        self, msg_cb: Callable[[str], bool],  
+        notice_cb: Callable[[str], bool], loop: asyncio.AbstractEventLoop, 
+        msg_handlers: List[Callable[[any, any], Tuple[bool, any]]]
+    ):
+        self.notice_cb = notice_cb
+        self.msg_cb = msg_cb
         self.loop = loop
         self.msg_handlers = msg_handlers
 
     def userTextMessage(self, p, msg, current=None):
-        if self.cb is None:
+        if self.msg_cb is None:
             return
         for handler in self.msg_handlers:
             send, msg = handler(p, msg)
             if not send:
                 return
-        asyncio.run_coroutine_threadsafe(self.cb("%s@mumble: %s" % (p.name, msg.text)), self.loop)
+        asyncio.run_coroutine_threadsafe(
+            self.msg_cb("%s@mumble: %s" % (p.name, msg.text)), 
+            self.loop
+        )
 
     def userDisconnected(self, p, current=None):
-        pass
+        if self.notice_cb is None:
+            return
+        asyncio.run_coroutine_threadsafe(
+            self.notice_cb("%s@mumble disconnected" % p.name), 
+            self.loop
+        )
 
     def userConnected(self, p, current=None):
-        pass
+        if self.notice_cb is None:
+            return
+        asyncio.run_coroutine_threadsafe(
+            self.notice_cb("%s@mumble connected" % p.name), 
+            self.loop
+        )
 
     def userStateChanged(self, p, current=None):
         pass
 
 class MurmurInterface():
-    def __init__(self, hostname: str, port: str, server_id: int, secret: str, loop: asyncio.AbstractEventLoop, msg_handlers: List[Callable[[any, any], Tuple[bool, any]]]):
+    def __init__(
+        self, hostname: str, port: str, server_id: int, 
+        secret: str, loop: asyncio.AbstractEventLoop, 
+        msg_handlers: List[Callable[[any, any], Tuple[bool, any]]]
+    ):
         self.hostname = hostname
         self.port = port
         self.server_id = server_id
         self.secret = secret
         self.msg_cb = None
+        self.notice_cb = None
         self.loop = loop
         self.msg_handlers = msg_handlers
 
     def set_msg_cb(self, cb: Callable[[str], bool]):
         self.msg_cb = cb
+
+    def set_notice_cb(self, cb: Callable[[str], bool]):
+        self.notice_cb = cb
 
     def initialize(self) -> bool:
         if not self.__connect():
@@ -88,7 +115,11 @@ class MurmurInterface():
     def __setup_callbacks(self):
         adapter = self.comm.createObjectAdapterWithEndpoints("Callback.Client", "tcp -h 127.0.0.1")
         adapter.activate()
-        server_cbs = Murmur.ServerCallbackPrx.uncheckedCast(adapter.addWithUUID(ServerCallbacks(self.msg_cb, self.loop, self.msg_handlers)))
+        server_cbs = Murmur.ServerCallbackPrx.uncheckedCast(
+            adapter.addWithUUID(
+                ServerCallbacks(self.msg_cb, self.notice_cb, self.loop, self.msg_handlers)
+            )
+        )
         self.server.addCallback(server_cbs)
 
     def cleanup(self):

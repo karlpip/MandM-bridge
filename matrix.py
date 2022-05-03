@@ -91,3 +91,13 @@ class MatrixInterface():
                 "body": msg
             }
         )
+
+    async def send_notice(self, msg: str):
+        await self.client.room_send(
+            room_id=self.channel_id,
+            message_type="m.room.message",
+            content = {
+                "msgtype": "m.notice",
+                "body": msg
+            }
+        )

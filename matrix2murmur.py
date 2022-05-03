@@ -55,6 +55,7 @@ class Matrix2Murmur():
             ]
         )
         self.murmur.set_msg_cb(self.matrix.send_msg)
+        self.murmur.set_notice_cb(self.matrix.send_notice)
         assert self.murmur.initialize()
 
         self.matrix.set_msg_cb(self.murmur.send_msg)

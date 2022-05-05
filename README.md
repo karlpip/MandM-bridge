@@ -1,4 +1,4 @@
-# matrix2murmur
+# MandM-bridge
 
 Bridges between a Murmur server and a matrix channel.\
 ICE is used to communicate with the murmur server, matrix-nio is used for matrix.

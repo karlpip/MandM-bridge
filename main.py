@@ -11,7 +11,7 @@ from murmur import MurmurInterface
 from matrix import MatrixInterface
 
 
-class Matrix2Murmur():
+class MandMBridge():
     def initialize(self):
         logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.DEBUG)
         logging.info("started")
@@ -70,6 +70,6 @@ class Matrix2Murmur():
 
 
 if __name__ == "__main__":
-    m2m = Matrix2Murmur()
-    m2m.initialize()
-    m2m.start()
+    mmb = MandMBridge()
+    mmb.initialize()
+    mmb.start()

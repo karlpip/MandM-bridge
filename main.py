@@ -5,10 +5,10 @@ import sys
 import signal
 import configparser
 
-
-from msghandlers import murmur_check_private, murmur_check_botamusique, murmur_remove_html
-from murmur import MurmurInterface
-from matrix import MatrixInterface
+from msghandlers import MsgHandlers
+from interface_murmur import InterfaceMurmur
+from interface_matrix import InterfaceMatrix
+from bridge import Bridge
 
 
 class MandMBridge():
@@ -16,57 +16,54 @@ class MandMBridge():
         logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.DEBUG)
         logging.info("started")
 
-        self.loop = asyncio.get_event_loop()
-        self.main_task = asyncio.ensure_future(self.main())
-        self.loop.add_signal_handler(signal.SIGINT, lambda: asyncio.ensure_future(self.cleanup()))
-        self.loop.add_signal_handler(signal.SIGTERM, lambda: asyncio.ensure_future(self.cleanup()))
+        self._loop = asyncio.get_event_loop()
+        self._main_task = asyncio.ensure_future(self.main())
+        self._loop.add_signal_handler(signal.SIGINT, lambda: asyncio.ensure_future(self.cleanup()))
+        self._loop.add_signal_handler(signal.SIGTERM, lambda: asyncio.ensure_future(self.cleanup()))
 
     def start(self):
         try:
-            self.loop.run_until_complete(self.main_task)
+            self._loop.run_until_complete(self._main_task)
         finally:
-            self.loop.close()
+            self._loop.close()
 
     async def main(self):
         config = configparser.ConfigParser()
         config.read("bridge.conf")
-
         
-        self.matrix = MatrixInterface(
+        self._matrix = InterfaceMatrix(
             config["matrix"]["Server"],
             config["matrix"]["User"],
             config["matrix"]["Pass"],
             config["matrix"]["Channel"],
             config["matrix"]["SyncFile"]
         )
-        await self.matrix.initialize()
-
-        self.murmur = MurmurInterface(
+        self._murmur = InterfaceMurmur(
             config["murmur"]["Server"],
             config["murmur"]["Port"],
             int(config["murmur"]["ServerId"]),
             config["murmur"]["Secret"],
-            self.loop,
-            [
-                murmur_check_private,
-                murmur_check_botamusique,
-                murmur_remove_html
-
-            ]
         )
-        self.murmur.set_msg_cb(self.matrix.send_msg)
-        self.murmur.set_notice_cb(self.matrix.send_notice)
-        assert self.murmur.initialize()
+        message_handlers = [method_name for method_name in dir(MsgHandlers)
+                            if callable(getattr(MsgHandlers, method_name)) and not method_name.startswith("__")]
+        logging.debug("loaded %d message handlers: %s" % 
+                        (len(message_handlers), ','.join(message_handlers)))
+        enabled_handlers = [handler_name for handler_name in config
+                            if handler_name in message_handlers]
+        logging.debug("enabled %d message handlers: %s" % 
+                        (len(enabled_handlers), ','.join(enabled_handlers)))        
+        self._bridge = Bridge(self._matrix, self._murmur, self._loop, enabled_handlers)
 
-        self.matrix.set_msg_cb(self.murmur.send_msg)
+        await self._matrix.initialize()
+        assert self._murmur.initialize()
 
         # main loop
-        await self.matrix.sync()
+        await self._matrix.sync()
     
     async def cleanup(self):
-        await self.matrix.cleanup()
-        self.murmur.cleanup()
-        self.main_task.cancel()
+        await self._matrix.cleanup()
+        self._murmur.cleanup()
+        self._main_task.cancel()
 
 
 if __name__ == "__main__":

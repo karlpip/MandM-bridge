@@ -36,14 +36,16 @@ class MandMBridge():
             config["matrix"]["User"],
             config["matrix"]["Pass"],
             config["matrix"]["Channel"],
-            config["matrix"]["SyncFile"]
+            config["matrix"]["SyncFile"],
         )
+
         self._murmur = InterfaceMurmur(
             config["murmur"]["Server"],
             config["murmur"]["Port"],
             int(config["murmur"]["ServerId"]),
             config["murmur"]["Secret"],
         )
+
         message_handlers = [method_name for method_name in dir(MsgHandlers)
                             if callable(getattr(MsgHandlers, method_name)) and not method_name.startswith("__")]
         logging.debug("loaded %d message handlers: %s" % 
@@ -56,6 +58,9 @@ class MandMBridge():
 
         await self._matrix.initialize()
         assert self._murmur.initialize()
+
+        if "BridgedChannels" in config["murmur"]:
+            self._murmur.bridged_channels = config["murmur"]["BridgedChannels"].split(",")
 
         # main loop
         await self._matrix.sync()

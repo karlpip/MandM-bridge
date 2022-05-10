@@ -10,9 +10,10 @@ class ServerCallbacks(Murmur.ServerCallback):
     def __init__(self):
         self._on_msg_cb = None
         self._on_connection_cb = None
+        self._bridged_channels = None
 
     @property
-    def on_msg_cb(self):
+    def on_msg_cb(self) -> Callable[[str, str], bool]:
         return self._on_msg_cb
 
     @on_msg_cb.setter
@@ -20,19 +21,31 @@ class ServerCallbacks(Murmur.ServerCallback):
         self._on_msg_cb = cb
 
     @property
-    def on_connection_cb(self):
+    def on_connection_cb(self) -> Callable[[str, str], bool]:
         return self._on_connection_cb
 
     @on_connection_cb.setter
     def on_connection_cb(self, cb: Callable[[str, str], bool]):
         self._on_connection_cb = cb
 
+    @property
+    def bridged_channels(self) -> List[str]:
+        return self._bridged_channels
+
+    @bridged_channels.setter
+    def bridged_channels(self, bridged_channels: List[str]):
+        self._bridged_channels = bridged_channels
+
     def userTextMessage(self, p, msg, current=None):
         if self._on_msg_cb is None:
             return
         if len(msg.channels) == 0:
             return
-        
+        if self._bridged_channels is not None:
+            if msg.channels[0] not in self._bridged_channels:
+                logging.debug("channel %s is not bridged, omitting message" % msg.channels[0])
+                return
+
         self._on_msg_cb(p.name, msg.text)
 
     def userDisconnected(self, p, current=None):
@@ -58,10 +71,12 @@ class InterfaceMurmur():
         self._server_id = server_id
         self._secret = secret
 
+        self._bridged_channels = None
+
         self._server_cbs = ServerCallbacks()
 
     @property
-    def on_msg_cb(self):
+    def on_msg_cb(self) -> Callable[[str, str], bool]:
         return self._server.on_msg_cb
 
     @on_msg_cb.setter
@@ -69,12 +84,28 @@ class InterfaceMurmur():
         self._server_cbs.on_msg_cb = cb
 
     @property
-    def on_connection_cb(self):
+    def on_connection_cb(self) -> Callable[[str, str], bool]:
         return self._server.on_connection_cb
 
     @on_connection_cb.setter
     def on_connection_cb(self, cb: Callable[[str, str], bool]):
         self._server_cbs.on_connection_cb = cb
+
+    @property
+    def bridged_channels(self) -> List[str]:
+        return self._server.bridged_channels
+
+    @bridged_channels.setter
+    def bridged_channels(self, bridged_channels: List[str]):
+        channel_ids = []
+        for name in bridged_channels:
+            if name not in self._channels:
+                logging.info("bridged channel %s not found" % name)
+                continue
+            channel_ids.append(self._channels[name])
+        
+        self._bridged_channels = channel_ids
+        self._server_cbs.bridged_channels = channel_ids
 
     def initialize(self) -> bool:
         if not self.__connect():
@@ -136,7 +167,12 @@ class InterfaceMurmur():
         if channel not in self._channels:
             logging.debug("channel %s not found" % channel)
             return False
-        self._server.sendMessageChannel(self._channels[channel], False, msg)
+        channel_id = self._channels[channel]
+        if self._bridged_channels is not None:
+            if channel_id not in self._bridged_channels:
+                logging.debug("channel %s is not bridged, omitting message" % channel_id)
+                return
+        self._server.sendMessageChannel(channel_id, False, msg)
         if len(msg) < 500:
             logging.debug("sent %s to channel %s" % (msg, channel))
 

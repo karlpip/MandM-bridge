@@ -18,7 +18,8 @@ ICE is used to communicate with the murmur server, matrix-nio is used for matrix
 
 ## Setup
 
-TODO: add requirements.txt for python3 env setup.
+Install the needed python packages with: \
+`pip3 install -r requirements.txt`
 
 Create a matrix user and create and join channel you want to bridge to.
 Set the credentials and channel name in bridge.conf.
@@ -26,7 +27,7 @@ Set the credentials and channel name in bridge.conf.
 Activate ICE and configure the secret as described at https://wiki.mumble.info/wiki/Ice.
 Fill in the murmur section in bridge.conf.
 
-To run the script as a service you can use the provided service file under examples/, just change the paths before.
+To run the script as a service you can use the provided service file under `examples/`, just change the paths before.
 
 ## Licencse
 

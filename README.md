@@ -29,6 +29,11 @@ Fill in the murmur section in bridge.conf.
 
 To run the script as a service you can use the provided service file under `examples/`, just change the paths before.
 
+To send bigger images to murmur you have to set: \
+`imagemessagelength=0` \
+In your mumble.ini. This disables the length limit of messages containing images.
+
+
 ## Licencse
 
 Copyright 2022 Karl Piplies

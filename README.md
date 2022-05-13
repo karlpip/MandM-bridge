@@ -18,6 +18,8 @@ ICE is used to communicate with the murmur server, matrix-nio is used for matrix
 
 ## Setup
 
+Clone the repository and checkout the latest tag. \
+
 Install the needed python packages with: \
 `pip3 install -r requirements.txt`
 

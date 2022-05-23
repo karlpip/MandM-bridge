@@ -15,13 +15,27 @@ ICE is used to communicate with the murmur server, matrix-nio is used for matrix
   - [ ] Bridge images from mumble to matrix
 - [X] Make bridged murmur channels configurable.
 - [X] Bridge mumble join / leave events.
+- WIP: [ ] End to end encryption
+
 
 ## Setup
 
 Clone the repository and checkout the latest tag.
 
+### Python virtual environment (optional)
+
+To create a python virtual environment execute the following in the repo directory: \
+`python3 -m venv env`
+
+And then activate the environment with: \
+`source env/bin/activate`
+
+### Dependencies
+
 Install the needed python packages with: \
 `pip3 install -r requirements.txt`
+
+### Configuration
 
 Create a matrix user and create and join channel you want to bridge to.
 Set the credentials and channel name in bridge.conf.
@@ -29,12 +43,16 @@ Set the credentials and channel name in bridge.conf.
 Activate ICE and configure the secret as described at https://wiki.mumble.info/wiki/Ice.
 Fill in the murmur section in bridge.conf.
 
-To run the script as a service you can use the provided service file under `examples/`, just change the paths before.
-
 To send bigger images to murmur you have to set: \
 `imagemessagelength=0` \
 In your mumble.ini. This disables the length limit of messages containing images.
 
+### Running
+
+You can execute the bot like this:
+`python3 main.py`
+
+Or to run the script as a service you can use the provided service file under `examples/`, dont forget to set the paths accordingly.
 
 ## Licencse
 

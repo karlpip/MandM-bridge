@@ -1,13 +1,13 @@
 [Unit]
-Description=bridge between matrix and mumble
+Description=MandM bridge
 After=multi-user.target
 
 [Service]
-User=karl
+User=mandm-bridge
 Type=simple
 Restart=always
-WorkingDirectory=/home/karl/MandM-bridge/
-ExecStart=/usr/bin/python3 /home/karl/MandM-bridge/main.py
+WorkingDirectory=/opt/mandm-bridge/
+ExecStart=/usr/bin/python3 /opt/mandm-bridge/main.py
 
 [Install]
 WantedBy=multi-user.target

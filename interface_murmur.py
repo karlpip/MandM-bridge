@@ -148,7 +148,7 @@ class InterfaceMurmur():
         return True
 
     def __setup_callbacks(self):
-        adapter = self._comm.createObjectAdapterWithEndpoints("Callback.Client", "tcp -h 127.0.0.1")
+        adapter = self._comm.createObjectAdapterWithEndpoints("Callback.Client", "tcp -h 127.0.0.1 -p 6505")
         adapter.activate()
         server_cbs_prx = Murmur.ServerCallbackPrx.uncheckedCast(
             adapter.addWithUUID(self._server_cbs)

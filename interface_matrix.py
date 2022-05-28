@@ -1,16 +1,16 @@
-import logging
+import logging, requests, json, uuid
 
 from typing import Callable
-from nio import AsyncClient, MatrixRoom, RoomMessageText, AsyncClientConfig, RoomMessageImage, SyncResponse
-
+from flask import Flask, jsonify, request
 
 class InterfaceMatrix():
-    def __init__(self, host: str, user: str, passwd: str, channel_id: str, sync_file: str):
-        self._host = host
-        self._user = user
-        self._passwd = passwd
-        self._channel_id = channel_id
-        self._sync_file = sync_file
+    def __init__(self, server: str, domain: str, port: int, as_token: str, hs_token: str, room_alias: str):
+        self._server = server
+        self._domain = domain
+        self._port = port
+        self._as_token = as_token
+        self._hs_token = hs_token
+        self._room_alias = room_alias
         
         self._on_msg_cb = None
         self._on_img_cb = None
@@ -31,83 +31,200 @@ class InterfaceMatrix():
     def on_img_cb(self, cb: Callable[[str, str, str], bool]):
         self._on_img_cb = cb    
 
-    async def __sync_cb(self, response):
-        self._last_sync_token = response.next_batch
+    def initialize(self) -> bool:
+        self._app = Flask(__name__)
+        self._app.add_url_rule("/transactions/<transaction>", view_func=self.__on_receive_events, methods=["PUT"])
+        self._app.add_url_rule("/rooms/<alias>", view_func=self.__query_alias)
+        
+        self._room_id = self.__resolve_room_alias()
+        if self._room_id is None:
+            logging.info("could not resolve room alias, creating the room")
+            self._room_id = self.__create_room()
+            if self._room_id is None:
+                logging.error("could not create room")
+                return False
 
-    async def __on_msg(self, room: MatrixRoom, event: RoomMessageText) -> None:
+        logging.info("initialized matrix appservice room id: %s", self._room_id)
+        return True
+
+    def cleanup(self):
+        pass
+
+    def serve(self):
+        self._app.run()
+
+    def __on_receive_events(self, transaction):
+        events = request.get_json()["events"]
+        for event in events:
+            self.__handle_event(event)
+        return jsonify({})
+
+    def __query_alias(self, alias):
+        # TODO: is that good enough?
+        return jsonify({})
+
+    def __on_msg(self, sender: str, text: str):
         if self._on_msg_cb is None:
             return
 
-        sender = room.user_name(event.sender)
-        if sender in self._user:
-            return
-        self._on_msg_cb(sender, event.body)
+        self._on_msg_cb(sender, text)
 
-    async def __on_img(self, room: MatrixRoom, event: RoomMessageImage) -> None:
+    def __on_img(self, sender: str, mxc_url: str, image_name: str):
         if self._on_img_cb is None:
             return
         
-        sender = room.user_name(event.sender)
-        if sender in self._user:
-            return
-        media_id = event.url.split("/")[-1]
-        httpless_host = self._host.split("//")[-1]
-        image_url = "%s/_matrix/media/r0/download/%s/%s" % (self._host, httpless_host, media_id)
+        media_id = mxc_url.split("/")[-1]
+        mxcless_host = self._server.split("//")[-1]
+        image_url = "%s/_matrix/media/r0/download/%s/%s" % (self._host, mxcless_host, media_id)
 
-        self._on_img_cb(sender, image_url, event.body)
+        self._on_img_cb(sender, image_url, image_name)
     
-    async def initialize(self):
-        self._client = AsyncClient(
-            self._host, 
-            self._user
+    def __handle_event(self, event):
+            if event["type"] != "m.room.message":
+                return
+            user = event["user_id"].split(":")[0][1:]
+            if user.startswith("mumble_"):
+                return
+
+            if event["content"]["msgtype"] == "m.image":
+                self.__on_img(user, event["content"]["url"], event["content"]["body"])
+            elif event["content"]["msgtype"] == "m.text":           
+                self._on_msg_cb(user, event["content"]["body"])
+
+    def __resolve_room_alias(self) -> str | None:
+        res = requests.get(
+            "%s/_matrix/client/v3/directory/room/%%23%s:%s" % (self._server, self._room_alias, self._domain),
+            headers={
+                "Content-Type":"application/json",
+                "Authorization": "Bearer %s" % self._as_token
+            }
+        )
+        if not res.ok:
+            return None
+        return res.json()["room_id"]
+
+    def __create_room(self) -> str | None:
+        res = requests.post(
+            "%s/_matrix/client/api/v1/createRoom" % self._server,
+            json.dumps({
+                "room_alias_name": self._room_alias,
+                "preset": "public_chat",
+                "creation_content": {"m.federate": False} 
+            }),
+            headers={
+                "Content-Type":"application/json",
+                "Authorization": "Bearer %s" % self._as_token
+            }
+        )
+        if not res.ok:
+            return None
+        room_id = res.json()["room_id"]
+
+        requests.put(
+            "%s/_matrix/client/v3/rooms/%s/state/m.room.power_levels" % (self._server, self._room_id),
+            json.dumps({
+                "users_default": 50
+            }),
+            headers={
+                "Content-Type":"application/json",
+                "Authorization": "Bearer %s" % self._as_token
+            }
         )
 
-        self._client.add_response_callback(self.__sync_cb, SyncResponse)
-        self._client.add_event_callback(self.__on_msg, RoomMessageText)
-        self._client.add_event_callback(self.__on_img, RoomMessageImage)
-        await self._client.login(self._passwd)
+        return room_id
+   
+    def __register_user(self, username_local_part: str) -> bool:
+        res = requests.post(
+            "%s/_matrix/client/v3/register" % self._server,
+            json.dumps({
+                "type": "m.login.application_service",
+                "username": username_local_part
+            }),
+            headers={
+                "Content-Type":"application/json",
+                "Authorization": "Bearer %s" % self._as_token
+            }
+        )
 
-        try:
-            f =  open(self._sync_file, "r")
-        except IOError:
-            self._first_sync_token = None
-        else:
-            self._first_sync_token = f.read()
-            logging.debug("restored last sync token %s" % self._first_sync_token)
-            f.close()
+        # TODO: whats up with the device id?!
+        print(res.json())
+        return res.ok
 
-        logging.info("initialized matrix connection")
+    def __join_bridge_room(self, user_id: str) -> bool:
+        res = requests.post(
+            "%s/_matrix/client/v3/join/%s?user_id=%s" % (self._server, self._room_id, user_id),
+            json.dumps({
+                "reason": "connected"
+            }),
+            headers={
+                "Content-Type":"application/json",
+                "Authorization": "Bearer %s" % self._as_token
+            }
+        )
+        return res.ok
 
-    async def cleanup(self):
-        f = open(self._sync_file, "w")
-        f.write(self._last_sync_token)
-        f.close()
-        logging.debug("wrote last sync token %s to file" % self._last_sync_token)
-        await self._client.close()
-        logging.debug("cleaned up matrix connection")
+    def __user_exists_or_create(self, user: str) -> bool:
+        user_local_part = "mumble_%s" % user
+        user_id = "@%s:%s" % (user_local_part, self._domain)
+        res = requests.get(
+            "%s/_matrix/client/v3/profile/%s" % (self._server, user_id),
+            headers={
+                "Content-Type":"application/json",
+                "Authorization": "Bearer %s" % self._as_token
+            }
+        )
+        if res.ok:
+            return True
+        logging.info("user %s does not exist yet, creating it" % user_id)
 
-    def sync(self):
-        if self._first_sync_token is None:
-            return self._client.sync_forever(30000, full_state=True)
+        if not self.__register_user(user_local_part):
+            logging.error("could not register user %s" % user_id)
+            return False
+        
+        if not self.__join_bridge_room(user_id):
+            logging.error("could not add user to bridge room")
+            return False
 
-        return self._client.sync_forever(30000, since=self._first_sync_token, full_state=True)
+        return True
 
-    async def send_msg(self, msg: str):
-        await self._client.room_send(
-            room_id=self._channel_id,
-            message_type="m.room.message",
-            content = {
+    def __set_presence(self, user: str, online: bool):
+        user_local_part = "mumble_%s" % user
+        user_id = "@%s:%s" % (user_local_part, self._domain)
+        requests.put(
+            "%s/_matrix/client/v3/presence/%s/status?user_id=%s" % (self._server, user_id, user_id),
+            json.dumps({
+                "presence": "online" if online else "offline"
+            }),
+            headers={
+                "Content-Type":"application/json",
+                "Authorization": "Bearer %s" % self._as_token
+            }
+        )
+
+    def __send_msg(self, user: str, msg: str):
+        user_local_part = "mumble_%s" % user
+        user_id = "@%s:%s" % (user_local_part, self._domain)
+        
+        res = requests.put(
+            "%s/_matrix/client/v3/rooms/%s/send/m.room.message/%s?user_id=%s" % (self._server, self._room_id, uuid.uuid4(), user_id),
+            json.dumps({
                 "msgtype": "m.text",
                 "body": msg
+            }),
+            headers={
+                "Content-Type":"application/json",
+                "Authorization": "Bearer %s" % self._as_token
             }
         )
+        print(res.json())
 
-    async def send_notice(self, msg: str):
-        await self._client.room_send(
-            room_id=self._channel_id,
-            message_type="m.room.message",
-            content = {
-                "msgtype": "m.notice",
-                "body": msg
-            }
-        )
+    def send_msg(self, user: str, msg: str):
+        if not self.__user_exists_or_create(user):
+            return
+        self.__send_msg(user, msg)
+
+    def set_user_presence(self, user: str, online: bool):
+        if not self.__user_exists_or_create(user):
+            return
+        
+        self.__set_presence(user, online)

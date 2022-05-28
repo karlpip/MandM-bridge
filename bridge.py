@@ -1,5 +1,4 @@
 import logging
-import asyncio
 import requests
 import base64
 from typing import Callable, List, Any, Tuple
@@ -11,11 +10,9 @@ from msghandlers import MsgHandlers
 
 class Bridge():
     def __init__(self, matrix: InterfaceMatrix, 
-                murmur: InterfaceMurmur, loop: asyncio.AbstractEventLoop,
-                msg_handlers: List[Callable[[str, str], Tuple[bool, any]]]):
+                murmur: InterfaceMurmur, msg_handlers: List[Callable[[str, str], Tuple[bool, any]]]):
         self._matrix = matrix
         self._murmur = murmur
-        self._loop = loop
         self._enabled_msg_handlers = msg_handlers
 
         self._matrix.on_img_cb = self.__on_matrix_img
@@ -31,7 +28,7 @@ class Bridge():
         
         try:
             img = requests.get(image_url).content
-        except requests.exceptions.RequestException as e:  # This is the correct syntax
+        except requests.exceptions.RequestException as e:
             logging.exception("error while getting media")
             return
         
@@ -51,10 +48,7 @@ class Bridge():
         logging.debug("got message from matrix %s:%s" % (sender, msg))
 
     def __on_murmur_connection(self, sender: str, connection_event: str):
-        asyncio.run_coroutine_threadsafe(
-            self._matrix.send_notice("%s %s" % (sender, connection_event)), 
-            self._loop,
-        )
+        self._matrix.set_user_presence(sender, (connection_event == "connected"))
         logging.debug("got connection from murmur %s:%s" % (sender, connection_event))
     
     def __on_murmur_msg(self, sender: str, msg: str):
@@ -64,9 +58,6 @@ class Bridge():
             send, msg = getattr(self._msg_handlers, handler)(sender, msg)
             if not send:
                 return
-            
-        asyncio.run_coroutine_threadsafe(
-            self._matrix.send_msg("%s [mumble]: %s" % (sender, msg)), 
-            self._loop,
-        )
+        
+        self._matrix.send_msg(sender, msg), 
         logging.debug("got message from murmur %s:%s" % (sender, msg))

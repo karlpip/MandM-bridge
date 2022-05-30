@@ -1,25 +1,26 @@
 import logging
-import time
-import sys
-import signal
-import configparser
+from configparser import ConfigParser
 
-from msghandlers import MsgHandlers
+from utils import load_enabled_msg_handlers
 from interface_murmur import InterfaceMurmur
 from interface_matrix import InterfaceMatrix
 from bridge import Bridge
 
 
-class MandMBridge():
-    def initialize(self):
-        logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.DEBUG)
-        logging.info("started")
+class MandMBridge:
+    def __init__(self, config_file: str):
+        self._config_file = config_file
 
-    def main(self):
-        config = configparser.ConfigParser()
-        config.read("bridge.conf")
-        
-        self._matrix = InterfaceMatrix(
+        self._matrix_interface = None
+        self._murmur_interface = None
+        self._bridge = None
+
+    def setup(self):
+        logging.info("setup")
+        config = ConfigParser()
+        config.read(self._config_file)
+
+        self._matrix_interface = InterfaceMatrix(
             config["matrix"]["Address"],
             config["matrix"]["ServerName"],
             config["matrix"]["ApplicationServicePort"],
@@ -27,41 +28,42 @@ class MandMBridge():
             config["matrix"]["HomeserverToken"],
             config["matrix"]["Room"],
         )
-        self._murmur = InterfaceMurmur(
+
+        murmur_channel_filter = None
+        if "BridgedChannels" in config["murmur"]:
+            murmur_channel_filter = config["murmur"]["BridgedChannels"].split(
+                ",")
+        self._murmur_interface = InterfaceMurmur(
             config["murmur"]["Address"],
             config["murmur"]["Port"],
             int(config["murmur"]["ServerId"]),
             config["murmur"]["Secret"],
+            murmur_channel_filter
         )
 
-        message_handlers = [method_name for method_name in dir(MsgHandlers)
-                            if callable(getattr(MsgHandlers, method_name)) and not method_name.startswith("__")]
-        logging.debug("loaded %d message handlers: %s" % 
-                        (len(message_handlers), ','.join(message_handlers)))
-        enabled_handlers = [handler_name for handler_name in config
-                            if handler_name in message_handlers]
-        logging.debug("enabled %d message handlers: %s" % 
-                        (len(enabled_handlers), ','.join(enabled_handlers)))        
-        self._bridge = Bridge(self._matrix, self._murmur, enabled_handlers)
+        msg_handlers = load_enabled_msg_handlers(config)
+        self._bridge = Bridge(self._matrix_interface,
+                              self._murmur_interface, msg_handlers)
 
-        assert self._matrix.initialize()
-        assert self._murmur.initialize()
-
-        if "BridgedChannels" in config["murmur"]:
-            self._murmur.bridged_channels = config["murmur"]["BridgedChannels"].split(",")
+    def do_bridge(self):
+        logging.info("bridging")
+        assert self._matrix_interface.initialize()
+        assert self._murmur_interface.initialize()
 
         # main loop
-        self._matrix.serve()
-    
+        self._matrix_interface.serve()
+
     def cleanup(self):
-        self._matrix.cleanup()
-        self._murmur.cleanup()
-        self._main_task.cancel()
+        # TODO: cleanup shit
+        pass
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(message)s", level=logging.DEBUG)
+
     # TODO: create appservice config generation
-    
-    mmb = MandMBridge()
-    mmb.initialize()
-    mmb.main()
+
+    mmb = MandMBridge("bridge.conf")
+    mmb.setup()
+    mmb.do_bridge()

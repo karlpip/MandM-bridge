@@ -8,8 +8,9 @@ from flask import Flask, jsonify, request
 
 
 class InterfaceMatrix():
-    def __init__(self, server: str, domain: str, port: int,
-                as_token: str, hs_token: str, room_alias: str):
+    # pylint: disable=too-many-instance-attributes
+    def __init__(self, server: str, domain: str, port: int, as_token: str, hs_token: str, room_alias: str):
+        # pylint: disable=too-many-arguments
         self._server = server
         self._domain = domain
         self._port = port
@@ -44,8 +45,7 @@ class InterfaceMatrix():
 
     def initialize(self) -> bool:
         self._app = Flask(__name__)
-        self._app.add_url_rule("/transactions/<transaction>",
-                               view_func=self.__on_receive_events, methods=["PUT"])
+        self._app.add_url_rule("/transactions/<transaction>", view_func=self.__on_receive_events, methods=["PUT"])
         self._app.add_url_rule("/rooms/<alias>", view_func=self.__query_alias)
 
         self._room_id = self.__resolve_room_alias()
@@ -56,8 +56,7 @@ class InterfaceMatrix():
                 logging.error("could not create room")
                 return False
 
-        logging.info(
-            "initialized matrix appservice room id: %s", self._room_id)
+        logging.info("initialized matrix appservice room id: %s", self._room_id)
         return True
 
     def cleanup(self):
@@ -66,7 +65,7 @@ class InterfaceMatrix():
     def serve(self):
         self._app.run()
 
-    def __on_receive_events(self, transaction):
+    def __on_receive_events(self, transaction): # pylint: disable=unused-argument
         events = request.get_json()["events"]
         for event in events:
             self.__handle_event(event)
@@ -100,8 +99,7 @@ class InterfaceMatrix():
             return
 
         if event["content"]["msgtype"] == "m.image":
-            self.__on_img(user, event["content"]
-                          ["url"], event["content"]["body"])
+            self.__on_img(user, event["content"]["url"], event["content"]["body"])
         elif event["content"]["msgtype"] == "m.text":
             self.__on_msg(user, event["content"]["body"])
 

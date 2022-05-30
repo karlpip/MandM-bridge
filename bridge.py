@@ -9,8 +9,9 @@ from interface_matrix import InterfaceMatrix
 from msghandlers import MsgHandlers
 
 
-# pylint: disable=too-few-public-methods
+
 class Bridge:
+    # pylint: disable=too-few-public-methods
     def __init__(self, matrix_interface: InterfaceMatrix,
                  murmur_interface: InterfaceMurmur,
                  msg_handlers: List[Callable[[str, str], Tuple[bool, str]]]):
@@ -37,8 +38,7 @@ class Bridge:
 
         encoded = base64.b64encode(img).decode('utf-8')
         extension = "png" if ".png" in image_name else "jpeg"
-        self._murmur_interface.send_msg(
-            f"{sender} [matrix]: <img src=\"data:image/{extension};base64,{encoded}\">")
+        self._murmur_interface.send_msg(f"{sender} [matrix]: <img src=\"data:image/{extension};base64,{encoded}\">")
 
     def __on_matrix_msg(self, sender: str, msg: str):
         for handler in self._enabled_msg_handlers:
@@ -52,10 +52,8 @@ class Bridge:
         logging.debug("got message from matrix %s:%s", sender, msg)
 
     def __on_murmur_connection(self, sender: str, connection_event: str):
-        self._matrix_interface.set_user_presence(
-            sender, (connection_event == "connected"))
-        logging.debug("got connection from murmur %s:%s",
-                      sender, connection_event)
+        self._matrix_interface.set_user_presence(sender, (connection_event == "connected"))
+        logging.debug("got connection from murmur %s:%s", sender, connection_event)
 
     def __on_murmur_msg(self, sender: str, msg: str):
         for handler in self._enabled_msg_handlers:

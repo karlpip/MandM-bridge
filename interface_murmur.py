@@ -5,11 +5,12 @@ from typing import Callable, List, Optional
 import Ice
 Ice.loadSlice("-I" + Ice.getSliceDir(), ["ressources/Murmur.ice"])
 # pylint: disable=wrong-import-position
-import Murmur
+import Murmur # pylint: disable=import-error
 
 
-# pylint: disable=invalid-name
+
 class ServerCallbacks(Murmur.ServerCallback):
+    # pylint: disable=invalid-name
     def __init__(self, channel_filter: Optional[List[str]]):
         self._on_msg_cb = None
         self._on_connection_cb = None
@@ -37,8 +38,7 @@ class ServerCallbacks(Murmur.ServerCallback):
         if len(msg.channels) == 0:
             return
         if self._channel_filter is not None and msg.channels[0] not in self._channel_filter:
-            logging.debug(
-                "channel %s is not bridged, omitting message", msg.channels[0])
+            logging.debug("channel %s is not bridged, omitting message", msg.channels[0])
             return
 
         self._on_msg_cb(p.name, msg.text)
@@ -58,10 +58,8 @@ class ServerCallbacks(Murmur.ServerCallback):
     def userStateChanged(self, p, _):
         pass
 
-
 class InterfaceMurmur:
-    def __init__(self, hostname: str, port: str, server_id: int,
-                secret: str, channel_filter: Optional[List[str]]):
+    def __init__(self, hostname: str, port: str, server_id: int, secret: str, channel_filter: Optional[List[str]]):
         self._hostname = hostname
         self._port = port
         self._server_id = server_id
@@ -112,8 +110,7 @@ class InterfaceMurmur:
         self._comm = Ice.initialize(init_data)
         self._comm.getImplicitContext().put("secret", self._secret)
 
-        prx = self._comm.stringToProxy(
-            f"Meta:tcp -h {self._hostname} -p {self._port}")
+        prx = self._comm.stringToProxy(f"Meta:tcp -h {self._hostname} -p {self._port}")
 
         self._meta_prx = Murmur.MetaPrx.checkedCast(prx)
         if not self._meta_prx:
@@ -133,8 +130,7 @@ class InterfaceMurmur:
         return True
 
     def __setup_callbacks(self):
-        adapter = self._comm.createObjectAdapterWithEndpoints(
-            "Callback.Client", "tcp -h 127.0.0.1")
+        adapter = self._comm.createObjectAdapterWithEndpoints("Callback.Client", "tcp -h 127.0.0.1")
         adapter.activate()
         server_cbs_prx = Murmur.ServerCallbackPrx.uncheckedCast(
             adapter.addWithUUID(self._server_cbs)
@@ -155,8 +151,7 @@ class InterfaceMurmur:
             return False
         channel_id = self._channels[channel]
         if self._channel_filter is not None and channel_id not in self._channel_filter:
-            logging.debug(
-                "channel %s is not bridged, omitting message", channel_id)
+            logging.debug("channel %s is not bridged, omitting message", channel_id)
             return
         self._server.sendMessageChannel(channel_id, False, msg)
         if len(msg) < 500:

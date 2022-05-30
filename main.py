@@ -32,8 +32,7 @@ class MandMBridge:
 
         murmur_channel_filter = None
         if "BridgedChannels" in config["murmur"]:
-            murmur_channel_filter = config["murmur"]["BridgedChannels"].split(
-                ",")
+            murmur_channel_filter = config["murmur"]["BridgedChannels"].split(",")
         self._murmur_interface = InterfaceMurmur(
             config["murmur"]["Address"],
             config["murmur"]["Port"],
@@ -43,8 +42,7 @@ class MandMBridge:
         )
 
         msg_handlers = load_enabled_msg_handlers(config)
-        self._bridge = Bridge(self._matrix_interface,
-                              self._murmur_interface, msg_handlers)
+        self._bridge = Bridge(self._matrix_interface, self._murmur_interface, msg_handlers)
 
     def do_bridge(self):
         logging.info("bridging")
@@ -60,14 +58,13 @@ class MandMBridge:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(message)s", level=logging.DEBUG)
+    logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.DEBUG)
 
     if len(sys.argv) > 1:
         with open("appservice_config.yaml", "w", encoding="utf-8") as file:
             file.write(generate_appservice_config("bridge.conf"))
         sys.exit(0)
-    
+
     mmb = MandMBridge("bridge.conf")
     mmb.setup()
     mmb.do_bridge()

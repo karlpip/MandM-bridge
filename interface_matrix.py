@@ -21,6 +21,8 @@ class InterfaceMatrix():
 
         self._room_id = None
 
+        self._users = []
+
         self._on_msg_cb = None
         self._on_img_cb = None
 
@@ -85,8 +87,7 @@ class InterfaceMatrix():
             return
 
         media_id = mxc_url.split("/")[-1]
-        mxcless_host = self._server.split("//")[-1]
-        image_url = f"{self._server}/_matrix/media/r0/download/{mxcless_host}/{media_id}"
+        image_url = f"{self._server}/_matrix/media/r0/download/{self._domain}/{media_id}"
 
         self._on_img_cb(sender, image_url, image_name)
 
@@ -190,6 +191,8 @@ class InterfaceMatrix():
         return res.ok
 
     def __user_exists_or_create(self, user: str) -> bool:
+        if user in self._users:
+            return True
         user_local_part = f"mumble_{user}"
         user_id = f"@{user_local_part}:{self._domain}"
         res = requests.get(
@@ -200,6 +203,7 @@ class InterfaceMatrix():
             }
         )
         if res.ok:
+            self._users.append(user)
             return True
         logging.info("user %s does not exist yet, creating it",  user_id)
 
@@ -211,6 +215,7 @@ class InterfaceMatrix():
             logging.error("could not add user to bridge room")
             return False
 
+        self._users.append(user)
         return True
 
     # def __set_presence(self, user: str, online: bool):
@@ -249,9 +254,12 @@ class InterfaceMatrix():
         self.__send_msg(user, msg)
 
     def set_user_presence(self, user: str, online: bool):
+        if not self.__user_exists_or_create(user):
+            return
+
         user_local_part = f"mumble_{user}"
         user_id = f"@{user_local_part}:{self._domain}"
-        
+
         if online:
             self.__join_bridge_room(user_id)
         else:

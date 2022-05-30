@@ -1,7 +1,7 @@
 import json
 import logging
 import uuid
-from typing import Callable
+from typing import Callable, Optional
 
 import requests
 from flask import Flask, jsonify, request
@@ -64,7 +64,7 @@ class InterfaceMatrix():
     def serve(self):
         self._app.run()
 
-    def __on_receive_events(self, _):
+    def __on_receive_events(self, transaction):
         events = request.get_json()["events"]
         for event in events:
             self.__handle_event(event)
@@ -91,6 +91,7 @@ class InterfaceMatrix():
         self._on_img_cb(sender, image_url, image_name)
 
     def __handle_event(self, event):
+        logging.debug("handling events")
         if event["type"] != "m.room.message":
             return
         user = event["user_id"].split(":")[0][1:]
@@ -103,10 +104,9 @@ class InterfaceMatrix():
         elif event["content"]["msgtype"] == "m.text":
             self.__on_msg(user, event["content"]["body"])
 
-    def __resolve_room_alias(self) -> str | None:
+    def __resolve_room_alias(self) -> Optional[str]:
         res = requests.get(
-            f"{self._server}/_matrix/client/v3/directory/"
-            f"room/%%23{self._room_alias}:{self._domain}",
+            f"{self._server}/_matrix/client/v3/directory/room/%23{self._room_alias}:{self._domain}",
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self._as_token}"
@@ -116,7 +116,7 @@ class InterfaceMatrix():
             return None
         return res.json()["room_id"]
 
-    def __create_room(self) -> str | None:
+    def __create_room(self) -> Optional[str]:
         res = requests.post(
             f"{self._server}/_matrix/client/api/v1/createRoom",
             json.dumps({
@@ -176,6 +176,19 @@ class InterfaceMatrix():
         )
         return res.ok
 
+    def __leave_bridge_room(self, user_id: str) -> bool:
+        res = requests.post(
+            f"{self._server}/_matrix/client/v3/rooms/{self._room_id}/leave?user_id={user_id}",
+            json.dumps({
+                "reason": "disconnected"
+            }),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self._as_token}"
+            }
+        )
+        return res.ok
+
     def __user_exists_or_create(self, user: str) -> bool:
         user_local_part = f"mumble_{user}"
         user_id = f"@{user_local_part}:{self._domain}"
@@ -200,26 +213,25 @@ class InterfaceMatrix():
 
         return True
 
-    def __set_presence(self, user: str, online: bool):
-        user_local_part = f"mumble_{user}"
-        user_id = f"@{user_local_part}:{self._domain}"
-        requests.put(
-            f"{self._server}/_matrix/client/v3/presence/{user_id}/status?user_id={user_id}",
-            json.dumps({
-                "presence": "online" if online else "offline"
-            }),
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self._as_token}"
-            }
-        )
+    # def __set_presence(self, user: str, online: bool):
+    #     user_local_part = f"mumble_{user}"
+    #     user_id = f"@{user_local_part}:{self._domain}"
+    #     requests.put(
+    #         f"{self._server}/_matrix/client/v3/presence/{user_id}/status?user_id={user_id}",
+    #         json.dumps({
+    #             "presence": "online" if online else "offline"
+    #         }),
+    #         headers={
+    #             "Content-Type": "application/json",
+    #             "Authorization": f"Bearer {self._as_token}"
+    #         }
+    #     )
 
     def __send_msg(self, user: str, msg: str):
         user_local_part = f"mumble_{user}"
         user_id = f"@{user_local_part}:{self._domain}"
         res = requests.put(
-            f"{self._server}/_matrix/client/v3/rooms/{self._room_id}"
-            f"/send/m.room.message/{uuid.uuid4()}?user_id={user_id}",
+            f"{self._server}/_matrix/client/v3/rooms/{self._room_id}/send/m.room.message/{uuid.uuid4()}?user_id={user_id}",
             json.dumps({
                 "msgtype": "m.text",
                 "body": msg
@@ -237,7 +249,10 @@ class InterfaceMatrix():
         self.__send_msg(user, msg)
 
     def set_user_presence(self, user: str, online: bool):
-        if not self.__user_exists_or_create(user):
-            return
-
-        self.__set_presence(user, online)
+        user_local_part = f"mumble_{user}"
+        user_id = f"@{user_local_part}:{self._domain}"
+        
+        if online:
+            self.__join_bridge_room(user_id)
+        else:
+            self.__leave_bridge_room(user_id)

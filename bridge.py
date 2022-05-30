@@ -48,7 +48,7 @@ class Bridge:
             if not send:
                 return
 
-        self._murmur_interface.send_msg("{sender} [matrix]: {msg}")
+        self._murmur_interface.send_msg(f"{sender} [matrix]: {msg}")
         logging.debug("got message from matrix %s:%s", sender, msg)
 
     def __on_murmur_connection(self, sender: str, connection_event: str):

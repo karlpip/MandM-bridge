@@ -1,6 +1,6 @@
 
 import logging
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 import Ice
 Ice.loadSlice("-I" + Ice.getSliceDir(), ["ressources/Murmur.ice"])
@@ -10,7 +10,7 @@ import Murmur
 
 # pylint: disable=invalid-name
 class ServerCallbacks(Murmur.ServerCallback):
-    def __init__(self, channel_filter: List[str] | None):
+    def __init__(self, channel_filter: Optional[List[str]]):
         self._on_msg_cb = None
         self._on_connection_cb = None
         self._channel_filter = channel_filter
@@ -61,7 +61,7 @@ class ServerCallbacks(Murmur.ServerCallback):
 
 class InterfaceMurmur:
     def __init__(self, hostname: str, port: str, server_id: int,
-                secret: str, channel_filter: List[str] | None):
+                secret: str, channel_filter: Optional[List[str]]):
         self._hostname = hostname
         self._port = port
         self._server_id = server_id
@@ -113,7 +113,7 @@ class InterfaceMurmur:
         self._comm.getImplicitContext().put("secret", self._secret)
 
         prx = self._comm.stringToProxy(
-            "Meta:tcp -h {self._hostname} -p {self._port}")
+            f"Meta:tcp -h {self._hostname} -p {self._port}")
 
         self._meta_prx = Murmur.MetaPrx.checkedCast(prx)
         if not self._meta_prx:
@@ -134,7 +134,7 @@ class InterfaceMurmur:
 
     def __setup_callbacks(self):
         adapter = self._comm.createObjectAdapterWithEndpoints(
-            "Callback.Client", "tcp -h 127.0.0.1 -p 6505")
+            "Callback.Client", "tcp -h 127.0.0.1")
         adapter.activate()
         server_cbs_prx = Murmur.ServerCallbackPrx.uncheckedCast(
             adapter.addWithUUID(self._server_cbs)

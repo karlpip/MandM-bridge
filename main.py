@@ -1,10 +1,11 @@
 import logging
+import sys
 from configparser import ConfigParser
 
-from utils import load_enabled_msg_handlers
-from interface_murmur import InterfaceMurmur
-from interface_matrix import InterfaceMatrix
 from bridge import Bridge
+from interface_matrix import InterfaceMatrix
+from interface_murmur import InterfaceMurmur
+from utils import load_enabled_msg_handlers, generate_appservice_config
 
 
 class MandMBridge:
@@ -62,8 +63,11 @@ if __name__ == "__main__":
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(message)s", level=logging.DEBUG)
 
-    # TODO: create appservice config generation
-
+    if len(sys.argv) > 1:
+        with open("appservice_config.yaml", "w", encoding="utf-8") as file:
+            file.write(generate_appservice_config("bridge.conf"))
+        sys.exit(0)
+    
     mmb = MandMBridge("bridge.conf")
     mmb.setup()
     mmb.do_bridge()

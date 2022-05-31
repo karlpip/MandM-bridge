@@ -7,7 +7,7 @@ User=mandm-bridge
 Type=simple
 Restart=always
 WorkingDirectory=/opt/mandm-bridge/
-ExecStart=/usr/bin/python3 /opt/mandm-bridge/main.py
+ExecStart=/opt/mandm-bridge/env/bin/python3 /opt/mandm-bridge/main.py
 
 [Install]
 WantedBy=multi-user.target

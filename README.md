@@ -1,7 +1,8 @@
 # MandM-bridge
 
 Bridges between a Murmur server and a matrix channel.\
-ICE is used to communicate with the murmur server, matrix-nio is used for matrix.
+ICE is used to communicate with the murmur server, ~~matrix-nio is used for matrix~~ an appservice is used for matrix.
+
 
 ## Features
 
@@ -15,8 +16,9 @@ ICE is used to communicate with the murmur server, matrix-nio is used for matrix
   - [ ] Bridge images from mumble to matrix
 - [X] Make bridged murmur channels configurable.
 - [X] Bridge mumble join / leave events.
-- WIP: [ ] End to end encryption
-
+- [X] One side puppeting (mumble users get ghost accounts in matrix)
+  - [X] Message puppeting
+  - [X] Presence puppeting with joining and leaving the bridge room.
 
 ## Setup
 
@@ -37,11 +39,15 @@ Install the needed python packages with: \
 
 ### Configuration
 
-Create a matrix user and create and join channel you want to bridge to.
-Set the credentials and channel name in bridge.conf.
+Fill in the bridge.conf as described in the comments.
+
+Generate a appservice configuration based on your bridge.conf with: \
+`python3 main.py --gen-appservice-config`
+
+Insert the path to this generated file in your matrix server configration under `app_service_config_files`
+and restart the matrix server.
 
 Activate ICE and configure the secret as described at https://wiki.mumble.info/wiki/Ice.
-Fill in the murmur section in bridge.conf.
 
 To send bigger images to murmur you have to set: \
 `imagemessagelength=0` \

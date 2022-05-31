@@ -1,5 +1,3 @@
-import random
-import string
 from configparser import ConfigParser
 from typing import Callable, List, Tuple
 
@@ -8,13 +6,20 @@ import yaml
 from msghandlers import MsgHandlers
 
 
-def load_enabled_msg_handlers(config: ConfigParser) -> List[Callable[[str, str], Tuple[bool, str]]]:
-    message_handlers = [method_name for method_name in dir(MsgHandlers)
-                        if callable(getattr(MsgHandlers, method_name))
-                        and not method_name.startswith("__")]
-    enabled_handlers = [handler_name for handler_name in config
-                        if handler_name in message_handlers]
+def load_enabled_msg_handlers(
+    config: ConfigParser,
+) -> List[Callable[[str, str], Tuple[bool, str]]]:
+    message_handlers = [
+        method_name
+        for method_name in dir(MsgHandlers)
+        if callable(getattr(MsgHandlers, method_name))
+        and not method_name.startswith("__")
+    ]
+    enabled_handlers = [
+        handler_name for handler_name in config if handler_name in message_handlers
+    ]
     return enabled_handlers
+
 
 def generate_appservice_config(config_file: str) -> str:
     config = ConfigParser()
@@ -32,20 +37,10 @@ def generate_appservice_config(config_file: str) -> str:
         "hs_token": hs_token,
         "sender_localpart": "mandm_bridge",
         "namespaces": {
-            "users": [
-                {
-                    "exclusive": True,
-                    "regex": "@mumble_*"
-                }
-            ],
+            "users": [{"exclusive": True, "regex": "@mumble_*"}],
             "rooms": [],
-            "aliases": [
-                {
-                    "exclusive": True,
-                    "regex": f"#{room}"
-                }
-            ]
-        }
+            "aliases": [{"exclusive": True, "regex": f"#{room}"}],
+        },
     }
 
     return yaml.dump(yaml_config)

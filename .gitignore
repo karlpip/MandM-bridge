@@ -141,4 +141,4 @@ cython_debug/
 # virtual studio code
 .vscode/
 
-sync.token
+bridge.conf

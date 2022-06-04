@@ -1,10 +1,12 @@
 import logging
 import sys
 from configparser import ConfigParser
+import argparse
+
+from matrix.appservice import Appservice
+from murmur.murmur import MurmurICE
 
 from bridge import Bridge
-from interface_matrix import InterfaceMatrix
-from interface_murmur import InterfaceMurmur
 from utils import load_enabled_msg_handlers, generate_appservice_config
 
 
@@ -12,8 +14,8 @@ class MandMBridge:
     def __init__(self, config_file: str):
         self._config_file = config_file
 
-        self._matrix_interface = None
-        self._murmur_interface = None
+        self._matrix = None
+        self._murmur = None
         self._bridge = None
 
     def setup(self):
@@ -21,19 +23,19 @@ class MandMBridge:
         config.read(self._config_file)
         msg_handlers = load_enabled_msg_handlers(config)
 
-        self._matrix_interface = InterfaceMatrix(
+        self._matrix = Appservice(
             config["matrix"]["Address"],
             config["matrix"]["ServerName"],
-            config["matrix"]["ApplicationServicePort"],
-            config["matrix"]["ApplicationServiceToken"],
-            config["matrix"]["HomeserverToken"],
-            config["matrix"]["Room"],
+            config["appservice"]["ApplicationServicePort"],
+            config["appservice"]["ApplicationServiceToken"],
+            config["appservice"]["HomeserverToken"],
+            config["appservice"]["UserPrefix"],
         )
 
         murmur_channel_filter = None
         if "BridgedChannels" in config["murmur"]:
             murmur_channel_filter = config["murmur"]["BridgedChannels"].split(",")
-        self._murmur_interface = InterfaceMurmur(
+        self._murmur = MurmurICE(
             config["murmur"]["Address"],
             config["murmur"]["Port"],
             int(config["murmur"]["ServerId"]),
@@ -42,36 +44,52 @@ class MandMBridge:
         )
 
         self._bridge = Bridge(
-            self._matrix_interface,
-            self._murmur_interface,
+            self._matrix,
+            config["appservice"]["Room"],
+            config["appservice"]["UserPrefix"],
+            self._murmur,
             msg_handlers,
         )
 
     def do_bridge(self):
-        assert self._matrix_interface.initialize()
-        assert self._murmur_interface.initialize()
+        assert self._matrix.initialize()
+        assert self._murmur.initialize()
+        assert self._bridge.initialize()
 
         # The running flask server is the main loop in this program.
         # Murmur events are triggered by an underlying C++ zeroc-ice
         # application which takes control of the GIL and calls
         # their python callbacks.
-        self._matrix_interface.serve()
+        self._matrix.serve()
 
     def cleanup(self):
-        # TODO: cleanup shit
-        pass
+        self._murmur.cleanup()
 
 
 if __name__ == "__main__":
-    if "--gen-appservice-config" in sys.argv:
-        with open("appservice_config.yaml", "w", encoding="utf-8") as file:
-            file.write(generate_appservice_config("bridge.conf"))
-        sys.exit(0)
-
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(message)s", level=logging.DEBUG
     )
 
-    mmb = MandMBridge("bridge.conf")
+    args_parser = argparse.ArgumentParser(description="MandM-bridge")
+    args_parser.add_argument(
+        "-c", "--config", help="Path to the bridge config file.", default="bridge.conf"
+    )
+    args_parser.add_argument(
+        "-g",
+        "--gen-appservice-config",
+        help="Just generate a appservice config from the given bridge config file.",
+        action="store_true",
+    )
+    args = args_parser.parse_args()
+
+    if args.gen_appservice_config:
+        with open("appservice_config.yaml", "w", encoding="utf-8") as file:
+            file.write(generate_appservice_config(args.config))
+        logging.info("wrote appservice config to appservice_config.yaml")
+        sys.exit(0)
+
+    mmb = MandMBridge(args.config)
     mmb.setup()
     mmb.do_bridge()
+    mmb.cleanup()

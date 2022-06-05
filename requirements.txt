@@ -2,3 +2,5 @@ flask
 zeroc-ice
 requests
 configparser
+waitress
+pyyaml

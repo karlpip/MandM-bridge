@@ -57,7 +57,6 @@ class Appservice(Matrix):
         self._on_img_cb = cb
 
     def initialize(self) -> bool:
-        # TODO: use other http server
         self._app = Flask(__name__)
         self._app.add_url_rule(
             "/transactions/<transaction>",
@@ -78,7 +77,6 @@ class Appservice(Matrix):
         return jsonify({})
 
     def _on_room_alias_query(self, _):
-        # TODO: is that good enough?
         return jsonify({})
 
     def _on_msg(self, room_id: str, sender: str, text: str):

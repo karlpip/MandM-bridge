@@ -4,3 +4,4 @@ requests
 configparser
 waitress
 pyyaml
+pillow

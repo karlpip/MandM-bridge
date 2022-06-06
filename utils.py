@@ -1,7 +1,9 @@
+import io
 from configparser import ConfigParser
 from typing import Callable, List, Tuple
 
 import yaml
+from PIL import Image
 
 from msghandlers import MsgHandlers
 
@@ -44,3 +46,13 @@ def generate_appservice_config(config_file: str) -> str:
     }
 
     return yaml.dump(yaml_config)
+
+
+def ensure_image_size(
+    image: bytes, format: str, max_width: int = 600, max_height: int = 450
+) -> bytes:
+    img = Image.open(io.BytesIO(image))
+    img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+    with io.BytesIO() as output:
+        img.save(output, format=format)
+        return output.getvalue()

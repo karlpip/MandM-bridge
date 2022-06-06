@@ -13,7 +13,7 @@ ICE is used to communicate with the murmur server, ~~matrix-nio is used for matr
   - [X] Handler: Delete html tags from links postged in mumble.
 - [ ] Bridge images.
   - [X] Bridge images from matrix to mumble
-    - [ ] Scale big images if noresize is not set in the picture comment.
+    - [X] Scale big images, disable resizing for the next image by sending !noresize before.
   - [ ] Bridge images from mumble to matrix
 - [X] Make bridged murmur channels configurable.
 - [X] Bridge mumble join / leave events.

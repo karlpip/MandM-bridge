@@ -8,6 +8,7 @@ import requests
 from matrix.appservice import Appservice
 from msghandlers import MsgHandlers
 from murmur.murmur import MurmurICE
+from utils import ensure_image_size
 
 # This class connects the two interfaces and does the actual bridging.
 # It provides the interfaces with callback functions and transforms
@@ -42,6 +43,8 @@ class Bridge:
         self._murmur.on_msg_cb = self._on_murmur_msg
 
         self._msg_handlers = MsgHandlers()
+
+        self.no_resize = False
 
     def initialize(self) -> bool:
         if not self._matrix_ensure_bridge_room():
@@ -101,8 +104,12 @@ class Bridge:
             logging.exception("error while getting media")
             return
 
-        encoded = base64.b64encode(img).decode("utf-8")
         extension = "png" if ".png" in image_name else "jpeg"
+        if not self.no_resize:
+            img = ensure_image_size(img, extension)
+        else:
+            self.no_resize = False
+        encoded = base64.b64encode(img).decode("utf-8")
         self._murmur.send_msg(
             f'{sender} [matrix]: <img src="data:image/{extension};base64,{encoded}">'
         )
@@ -114,6 +121,8 @@ class Bridge:
             send, msg = getattr(self._msg_handlers, handler)(sender, msg)
             if not send:
                 return
+        if msg == "!noresize":
+            self.no_resize = True
 
         self._murmur.send_msg(f"{sender} [matrix]: {msg}")
 

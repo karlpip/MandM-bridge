@@ -1,7 +1,7 @@
 import logging
 
 from waitress import serve
-from typing import Callable
+from typing import Callable, Optional
 from .matrix import Matrix
 from flask import Flask, jsonify, request
 
@@ -56,8 +56,11 @@ class Appservice(Matrix):
     def on_img_cb(self, cb: Callable[[str, str, str, str], bool]):
         self._on_img_cb = cb
 
-    def initialize(self) -> bool:
-        self._app = Flask(__name__)
+    def initialize(self, app: Optional[Flask] = None) -> bool:
+        if app is not None:
+            self._app = app
+        else:
+            self._app = Flask(__name__)
         self._app.add_url_rule(
             "/transactions/<transaction>",
             view_func=self._on_transaction_push,

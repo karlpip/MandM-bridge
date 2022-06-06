@@ -113,20 +113,3 @@ class Appservice(Matrix):
             )
         elif event["content"]["msgtype"] == "m.text":
             self._on_msg(event["room_id"], user, event["content"]["body"])
-
-    # def send_msg(self, user: str, room_alias_name: str, text: str):
-    #     if not self._user_exists_or_create(user):
-    #         return
-    #     self._send_msg(user, msg)
-
-    # def set_user_presence(self, user: str, online: bool):
-    #     if not self._user_exists_or_create(user):
-    #         return
-
-    #     user_local_part = f"mumble_{user}"
-    #     user_id = f"@{user_local_part}:{self._matrix_domain}"
-
-    #     if online:
-    #         self._join_bridge_room(user_id)
-    #     else:
-    #         self._leave_bridge_room(user_id)

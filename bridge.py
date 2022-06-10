@@ -72,7 +72,7 @@ class Bridge:
         exists = self._matrix.user_exist(self._user_prefix + name)
         if not exists:
             logging.info("user %s does not exist, registering", name)
-            if not self._matrix.register_user(name):
+            if not self._matrix.register_user(self._user_prefix + name):
                 logging.error("could not create user")
                 return False
         if has_to_be_joined:

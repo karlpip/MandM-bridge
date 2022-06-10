@@ -31,6 +31,7 @@ def generate_appservice_config(config_file: str) -> str:
     as_token = config["appservice"]["ApplicationServiceToken"]
     hs_token = config["appservice"]["HomeserverToken"]
     room = config["appservice"]["Room"]
+    user_prefix = config["appservice"]["UserPrefix"]
 
     yaml_config = {
         "id": "mandm_bridge",
@@ -39,7 +40,7 @@ def generate_appservice_config(config_file: str) -> str:
         "hs_token": hs_token,
         "sender_localpart": "mandm_bridge",
         "namespaces": {
-            "users": [{"exclusive": True, "regex": "@mumble_*"}],
+            "users": [{"exclusive": True, "regex": "@" + user_prefix + ".*"}],
             "rooms": [],
             "aliases": [{"exclusive": True, "regex": f"#{room}"}],
         },

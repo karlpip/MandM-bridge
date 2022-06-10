@@ -142,3 +142,5 @@ cython_debug/
 .vscode/
 
 bridge.conf
+
+appservice_config.yaml

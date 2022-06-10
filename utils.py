@@ -27,10 +27,10 @@ def generate_appservice_config(config_file: str) -> str:
     config = ConfigParser()
     config.read(config_file)
 
-    service_port = config["matrix"]["ApplicationServicePort"]
-    as_token = config["matrix"]["ApplicationServiceToken"]
-    hs_token = config["matrix"]["HomeserverToken"]
-    room = config["matrix"]["Room"]
+    service_port = config["appservice"]["ApplicationServicePort"]
+    as_token = config["appservice"]["ApplicationServiceToken"]
+    hs_token = config["appservice"]["HomeserverToken"]
+    room = config["appservice"]["Room"]
 
     yaml_config = {
         "id": "mandm_bridge",

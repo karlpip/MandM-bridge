@@ -24,6 +24,7 @@ class Bridge:
         user_prefix: str,
         murmur: MurmurICE,
         msg_handlers: List[Callable[[str, str], Tuple[bool, str]]],
+        message_on_connected: bool = False,
     ):
         self._matrix = matrix
         self._bridge_room = bridge_room
@@ -41,6 +42,8 @@ class Bridge:
 
         self._murmur.on_connection_cb = self._on_murmur_connection
         self._murmur.on_msg_cb = self._on_murmur_msg
+
+        self._message_on_connected = message_on_connected
 
         self._msg_handlers = MsgHandlers()
 
@@ -134,6 +137,15 @@ class Bridge:
 
         if connection_event == "connected":
             self._matrix_user_join_bridge_room(sender)
+            if self._message_on_connected:
+                sent = self._matrix.user_send_msg(
+                    self._user_prefix + sender,
+                    "connected!",
+                    self._bridge_room_id,
+                    str(uuid.uuid4()),
+                )
+                if not sent:
+                    logging.error("could not send matrix message")
         else:
             self._matrix_user_leave_bridge_room(sender)
 

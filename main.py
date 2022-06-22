@@ -43,12 +43,17 @@ class MandMBridge:
             murmur_channel_filter,
         )
 
+        if "MessageOnConnected" in config["appservice"]:
+            message_on_connection = (
+                True if config["appservice"]["MessageOnConnected"] == "on" else False
+            )
         self._bridge = Bridge(
             self._matrix,
             config["appservice"]["Room"],
             config["appservice"]["UserPrefix"],
             self._murmur,
-            msg_handlers,
+            msg_handlers,  #
+            message_on_connection,
         )
 
     def do_bridge(self):

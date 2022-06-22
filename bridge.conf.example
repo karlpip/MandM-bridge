@@ -15,6 +15,9 @@ UserPrefix = mumble_
 # Tokens used for appservice <-> matrix communication, can be generated alphanumeric strings
 ApplicationServiceToken = placeholder
 HomeserverToken = placeholder
+# If this option is set to on, the murmur puppets push a connected message
+# on joining the murmur into the matrix room.
+MessageOnConnected = off
 
 [murmur]
 # Address of the Murmur server.

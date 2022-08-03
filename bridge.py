@@ -161,6 +161,10 @@ class Bridge:
                 return
             self._matrix_registrated_users.append(sender)
 
+        if len(msg) > 1000:
+            logging.info("murmur message too big, wont bridge")
+            return
+
         sent = self._matrix.user_send_msg(
             self._user_prefix + sender, msg, self._bridge_room_id, str(uuid.uuid4())
         )

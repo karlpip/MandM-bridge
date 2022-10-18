@@ -6,8 +6,9 @@ ServerName = my.domain.name
 
 [appservice]
 # The port which wil be used by the appservices http server.
-# By default the only listens on 127.0.0.1.
 ApplicationServicePort = 5000
+# The address that the appservice will listen on.
+ApplicationServiceIP = 127.0.0.1
 # The room which murmur gets bridged to, if it does not exists yet the bridge creates it.
 Room = mumble_bridge
 # The room which murmur gets bridged to, if it does not exists yet the bridge creates it.

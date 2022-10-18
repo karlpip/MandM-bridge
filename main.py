@@ -27,6 +27,7 @@ class MandMBridge:
             config["matrix"]["Address"],
             config["matrix"]["ServerName"],
             config["appservice"]["ApplicationServicePort"],
+            config["appservice"]["ApplicationServiceIP"],
             config["appservice"]["ApplicationServiceToken"],
             config["appservice"]["HomeserverToken"],
             config["appservice"]["UserPrefix"],

@@ -20,6 +20,7 @@ class Appservice(Matrix):
         matrix_server: str,
         matrix_domain: str,
         port: int,
+        ip: str,
         as_token: str,
         hs_token: str,
         user_prefix: str,
@@ -33,6 +34,7 @@ class Appservice(Matrix):
         self._user_prefix = user_prefix
 
         self._port = port
+        self._ip = ip
         self._app = None
 
         self._on_msg_cb = None
@@ -70,7 +72,7 @@ class Appservice(Matrix):
         return True
 
     def serve(self):
-        serve(self._app, host="127.0.0.1", port=self._port)
+        serve(self._app, host=self._ip, port=self._port)
         logging.info("past serve")
 
     def _on_transaction_push(self, transaction):

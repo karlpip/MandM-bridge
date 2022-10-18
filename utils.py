@@ -28,6 +28,7 @@ def generate_appservice_config(config_file: str) -> str:
     config.read(config_file)
 
     service_port = config["appservice"]["ApplicationServicePort"]
+    service_ip = config["appservice"]["ApplicationServiceIP"]
     as_token = config["appservice"]["ApplicationServiceToken"]
     hs_token = config["appservice"]["HomeserverToken"]
     room = config["appservice"]["Room"]
@@ -35,7 +36,7 @@ def generate_appservice_config(config_file: str) -> str:
 
     yaml_config = {
         "id": "mandm_bridge",
-        "url": f"http://localhost:{service_port}",
+        "url": f"http://{service_ip}:{service_port}",
         "as_token": as_token,
         "hs_token": hs_token,
         "sender_localpart": "mandm_bridge",

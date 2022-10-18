@@ -43,6 +43,7 @@ class MandMBridge:
             murmur_channel_filter,
         )
 
+        message_on_connection = False
         if "MessageOnConnected" in config["appservice"]:
             message_on_connection = (
                 True if config["appservice"]["MessageOnConnected"] == "on" else False

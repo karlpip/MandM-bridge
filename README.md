@@ -61,7 +61,7 @@ You can execute the bot like this: \
 
 Or to run the script as a service you can use the provided service file under `examples/`, dont forget to set the paths accordingly.
 
-## Licencse
+## MIT License
 
 Copyright 2022 Karl Piplies
 

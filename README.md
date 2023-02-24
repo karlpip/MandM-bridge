@@ -50,9 +50,14 @@ and restart the matrix server.
 
 Activate ICE and configure the secret as described at https://wiki.mumble.info/wiki/Ice.
 
+Append the following to the `[Ice]` secriont of your `/etc/mumble-server.ini` : \
+```
+Ice.ACM.Client.Close=0
+Ice.ACM.Client.Heartbeat=3
+```
 To send bigger images to murmur you have to set: \
 `imagemessagelength=0` \
-In your mumble.ini. This disables the length limit of messages containing images.
+In your mumble-server.ini. This disables the length limit of messages containing images.
 
 ### Running
 

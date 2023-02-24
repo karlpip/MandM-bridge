@@ -65,6 +65,7 @@ class MurmurICE:
         props = Ice.createProperties([])
         props.setProperty("Ice.ImplicitContext", "Shared")
         props.setProperty("Ice.ACM.Server.Close", "0")
+        props.setProperty("Ice.ACM.Server.Heartbeat", "3")
 
         init_data = Ice.InitializationData()
         init_data.properties = props

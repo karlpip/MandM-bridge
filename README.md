@@ -50,7 +50,7 @@ and restart the matrix server.
 
 Activate ICE and configure the secret as described at https://wiki.mumble.info/wiki/Ice.
 
-Append the following to the `[Ice]` secriont of your `/etc/mumble-server.ini` : \
+Append the following to the `[Ice]` section of your `/etc/mumble-server.ini`:
 ```
 Ice.ACM.Client.Close=0
 Ice.ACM.Client.Heartbeat=3

@@ -2,6 +2,8 @@ import io
 from configparser import ConfigParser
 from typing import Callable, List, Tuple
 
+from bridge import Bridge
+
 import yaml
 from PIL import Image
 
@@ -10,7 +12,7 @@ from msghandlers import MsgHandlers
 
 def load_enabled_msg_handlers(
     config: ConfigParser,
-) -> List[Callable[[str, str], Tuple[bool, str]]]:
+) -> List[Callable[[Bridge, str, str], Tuple[bool, str]]]:
     message_handlers = [
         method_name
         for method_name in dir(MsgHandlers)

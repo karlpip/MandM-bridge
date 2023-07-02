@@ -23,7 +23,7 @@ class Bridge:
         bridge_room: str,
         user_prefix: str,
         murmur: MurmurICE,
-        msg_handlers: List[Callable[[str, str], Tuple[bool, str]]],
+        msg_handlers: List[Callable[[Bridge, str, str], Tuple[bool, str]]],
         message_on_connected: bool = False,
     ):
         self._matrix = matrix
@@ -121,7 +121,7 @@ class Bridge:
         for handler in self._enabled_msg_handlers:
             if not handler.startswith("matrix"):
                 continue
-            send, msg = getattr(self._msg_handlers, handler)(sender, msg)
+            send, msg = getattr(self._msg_handlers, handler)(self, sender, msg)
             if not send:
                 return
         if msg == "!noresize":
@@ -153,7 +153,7 @@ class Bridge:
         for handler in self._enabled_msg_handlers:
             if not handler.startswith("murmur"):
                 continue
-            send, msg = getattr(self._msg_handlers, handler)(sender, msg)
+            send, msg = getattr(self._msg_handlers, handler)(self, sender, msg)
             if not send:
                 return
         if sender not in self._matrix_registrated_users:

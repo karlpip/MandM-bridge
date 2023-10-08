@@ -64,11 +64,11 @@ class Appservice(Matrix):
         else:
             self._app = Flask(__name__)
         self._app.add_url_rule(
-            "/transactions/<transaction>",
+            "/_matrix/app/v1/transactions/<transaction>",
             view_func=self._on_transaction_push,
             methods=["PUT"],
         )
-        self._app.add_url_rule("/rooms/<alias>", view_func=self._on_room_alias_query)
+        self._app.add_url_rule("/_matrix/app/v1/rooms/<alias>", view_func=self._on_room_alias_query)
         return True
 
     def serve(self):

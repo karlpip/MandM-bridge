@@ -66,6 +66,7 @@ class MurmurICE:
         props.setProperty("Ice.ImplicitContext", "Shared")
         props.setProperty("Ice.ACM.Server.Close", "0")
         props.setProperty("Ice.ACM.Server.Heartbeat", "3")
+        props.setProperty("Ice.MessageSizeMax", "65536")
 
         init_data = Ice.InitializationData()
         init_data.properties = props

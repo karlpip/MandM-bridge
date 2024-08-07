@@ -105,6 +105,8 @@ class Appservice(Matrix):
     def _handle_event(self, event):
         if event["type"] != "m.room.message":
             return
+        if "redacted_because" in event:
+            return 
         user = event["user_id"].split(":")[0][1:]
         if user.startswith(self._user_prefix):
             return

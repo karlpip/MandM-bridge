@@ -17,16 +17,15 @@ from flask import Flask, jsonify, request
 class Appservice(Matrix):
     def __init__(
         self,
-        matrix_server: str,
-        matrix_domain: str,
+        server: str,
+        domain: str,
         port: int,
         ip: str,
         as_token: str,
         hs_token: str,
         user_prefix: str,
     ):
-        super().__init__(matrix_server, matrix_domain, as_token)
-        self._matrix_domain = matrix_domain
+        super().__init__(server, domain, as_token)
 
         # TODO: use this somehow
         self._hs_token = hs_token
@@ -40,7 +39,7 @@ class Appservice(Matrix):
         self._on_msg_cb = None
         self._on_img_cb = None
 
-        self._media_api = f"{matrix_server}/_matrix/media/v3"
+        self._media_api = f"{server}/_matrix/client/v1/media"
 
     @property
     def on_msg_cb(self):
@@ -55,7 +54,7 @@ class Appservice(Matrix):
         return self.on_img_cb
 
     @on_img_cb.setter
-    def on_img_cb(self, cb: Callable[[str, str, str, str], bool]):
+    def on_img_cb(self, cb: Callable[[str, str, str], bool]):
         self._on_img_cb = cb
 
     def initialize(self, app: Optional[Flask] = None) -> bool:
@@ -99,8 +98,7 @@ class Appservice(Matrix):
             return
 
         media_id = mxc_url.split("/")[-1]
-        image_url = f"{self._media_api}/download/{self._matrix_domain}/{media_id}"
-        self._on_img_cb(room_id, sender, image_url, image_name)
+        self._on_img_cb(sender, image_name, media_id)
 
     def _handle_event(self, event):
         if event["type"] != "m.room.message":

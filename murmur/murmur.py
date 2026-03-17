@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 
 import Ice
 
-Ice.loadSlice("-I" + Ice.getSliceDir(), ["ressources/MumbleServer.ice"])
+Ice.loadSlice(["-I" + Ice.getSliceDir(), "ressources/MumbleServer.ice"])
 import MumbleServer  # noqa: E402
 
 
@@ -70,7 +70,7 @@ class MurmurICE:
         init_data = Ice.InitializationData()
         init_data.properties = props
 
-        self._comm = Ice.initialize(init_data)
+        self._comm = Ice.initialize(initData=init_data)
         self._comm.getImplicitContext().put("secret", self._secret)
 
         prx = self._comm.stringToProxy(f"Meta:tcp -h {self._hostname} -p {self._port}")

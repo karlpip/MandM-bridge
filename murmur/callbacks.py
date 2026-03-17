@@ -3,7 +3,7 @@ from typing import Callable, List, Optional
 
 import Ice
 
-Ice.loadSlice("-I" + Ice.getSliceDir(), ["ressources/MumbleServer.ice"])
+Ice.loadSlice(["-I" + Ice.getSliceDir(), "ressources/MumbleServer.ice"])
 import MumbleServer  # noqa: E402
 
 
@@ -66,4 +66,13 @@ class ServerCallbacks(MumbleServer.ServerCallback):
         self._on_connection_cb(p.name, "connected")
 
     def userStateChanged(self, p, _):
+        pass
+
+    def channelCreated(self, p, _):
+        pass
+
+    def channelRemoved(self, p, _):
+        pass
+
+    def channelStateChanged(self, p, _):
         pass

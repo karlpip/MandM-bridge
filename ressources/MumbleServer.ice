@@ -1,11 +1,11 @@
-// Copyright The Mumble Developers. All rights reserved.
+// Copyright 2022-2023 The Mumble Developers. All rights reserved.
 // Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file at the root of the
 // Mumble source tree or at <https://www.mumble.info/LICENSE>.
 
 /**
  *
- * Information and control of the Mumble server. Each server has
+ * Information and control of the murmur server. Each server has
  * one {@link Meta} interface that controls global information, and
  * each virtual server has a {@link Server} interface.
  *
@@ -117,7 +117,7 @@ module MumbleServer
 		IntList links;
 		/** Description of channel. Shown as tooltip for this channel. */
 		string description;
-		/** Channel is temporary, and will be removed when the last user leaves it. Read-only. */
+		/** Channel is temporary, and will be removed when the last user leaves it. */
 		bool temporary;
 		/** Position of the channel which is used in Client for sorting. */
 		int position;
@@ -264,45 +264,36 @@ module MumbleServer
 		UserList users;
 	};
 
-	/** Different states of the underlying database */
-	enum DBState { Normal, ReadOnly };
-
-	exception ServerException {};
-	/** Thrown if the server encounters an internal error while processing the request */
-	exception InternalErrorException extends ServerException {};
+	exception MurmurException {};
 	/** This is thrown when you specify an invalid session. This may happen if the user has disconnected since your last call to {@link Server.getUsers}. See {@link User.session} */
-	exception InvalidSessionException extends ServerException {};
+	exception InvalidSessionException extends MurmurException {};
 	/** This is thrown when you specify an invalid channel id. This may happen if the channel was removed by another provess. It can also be thrown if you try to add an invalid channel. */
-	exception InvalidChannelException extends ServerException {};
+	exception InvalidChannelException extends MurmurException {};
 	/** This is thrown when you try to do an operation on a server that does not exist. This may happen if someone has removed the server. */
-	exception InvalidServerException extends ServerException {};
+	exception InvalidServerException extends MurmurException {};
 	/** This happens if you try to fetch user or channel state on a stopped server, if you try to stop an already stopped server or start an already started server. */
-	exception ServerBootedException extends ServerException {};
+	exception ServerBootedException extends MurmurException {};
 	/** This is thrown if {@link Server.start} fails, and should generally be the cause for some concern. */
-	exception ServerFailureException extends ServerException {};
+	exception ServerFailureException extends MurmurException {};
 	/** This is thrown when you specify an invalid userid. */
-	exception InvalidUserException extends ServerException {};
+	exception InvalidUserException extends MurmurException {};
 	/** This is thrown when you try to set an invalid texture. */
-	exception InvalidTextureException extends ServerException {};
+	exception InvalidTextureException extends MurmurException {};
 	/** This is thrown when you supply an invalid callback. */
-	exception InvalidCallbackException extends ServerException {};
+	exception InvalidCallbackException extends MurmurException {};
 	/**  This is thrown when you supply the wrong secret in the calling context. */
-	exception InvalidSecretException extends ServerException {};
+	exception InvalidSecretException extends MurmurException {};
 	/** This is thrown when the channel operation would exceed the channel nesting limit */
-	exception NestingLimitException extends ServerException {};
+	exception NestingLimitException extends MurmurException {};
 	/**  This is thrown when you ask the server to disclose something that should be secret. */
-	exception WriteOnlyException extends ServerException {};
+	exception WriteOnlyException extends MurmurException {};
 	/** This is thrown when invalid input data was specified. */
-	exception InvalidInputDataException extends ServerException {};
-	/** This is thrown when the referenced channel listener does not actually exist */
-	exception InvalidListenerException extends ServerException {};
-	/** This is thrown when the server has its database in read-only mode and whatever you requested is incompatible with that. */
-	exception ReadOnlyModeException extends ServerException {};
+	exception InvalidInputDataException extends MurmurException {};
 
 	/** Callback interface for servers. You can supply an implementation of this to receive notification
 	 *  messages from the server.
 	 *  If an added callback ever throws an exception or goes away, it will be automatically removed.
-	 *  Please note that all callbacks are done asynchronously; the server does not wait for the callback to
+	 *  Please note that all callbacks are done asynchronously; murmur does not wait for the callback to
 	 *  complete before continuing processing.
 	 *  Note that callbacks are removed when a server is stopped, so you should have a callback for
 	 *  {@link MetaCallback.started} which calls {@link Server.addCallback}.
@@ -351,7 +342,7 @@ module MumbleServer
 
 	/** Callback interface for context actions. You need to supply one of these for {@link Server.addContext}. 
 	 *  If an added callback ever throws an exception or goes away, it will be automatically removed.
-	 *  Please note that all callbacks are done asynchronously; the server does not wait for the callback to
+	 *  Please note that all callbacks are done asynchronously; murmur does not wait for the callback to
 	 *  complete before continuing processing.
 	 */
 	interface ServerContextCallback {
@@ -367,20 +358,20 @@ module MumbleServer
 	/** Callback interface for server authentication. You need to supply one of these for {@link Server.setAuthenticator}.
 	 *  If an added callback ever throws an exception or goes away, it will be automatically removed.
 	 *  Please note that unlike {@link ServerCallback} and {@link ServerContextCallback}, these methods are called
-	 *  synchronously. If the response lags, the entire server will lag.
+	 *  synchronously. If the response lags, the entire murmur server will lag.
 	 *  Also note that, as the method calls are synchronous, making a call to {@link Server} or {@link Meta} will
 	 *  deadlock the server.
 	 */
 	interface ServerAuthenticator {
 		/** Called to authenticate a user. If you do not know the username in question, always return -2 from this
 		 *  method to fall through to normal database authentication.
-		 *  Note that if authentication succeeds, the server will create a record of the user in it's database, reserving
+		 *  Note that if authentication succeeds, murmur will create a record of the user in it's database, reserving
 		 *  the username and id so it cannot be used for normal database authentication.
 		 *  The data in the certificate (name, email addresses etc), as well as the list of signing certificates,
 		 *  should only be trusted if certstrong is true.
 		 *
-		 *  Internally, the server treats usernames as case-insensitive. It is recommended
-		 *  that authenticators do the same. the server checks if a username is in use when
+		 *  Internally, Murmur treats usernames as case-insensitive. It is recommended
+		 *  that authenticators do the same. Murmur checks if a username is in use when
 		 *  a user connects. If the connecting user is registered, the other username is
 		 *  kicked. If the connecting user is not registered, the connecting user is not
 		 *  allowed to join the server.
@@ -388,7 +379,7 @@ module MumbleServer
 		 *  @param name Username to authenticate.
 		 *  @param pw Password to authenticate with.
 		 *  @param certificates List of der encoded certificates the user connected with.
-		 *  @param certhash Hash of user certificate, as used by the server internally when matching.
+		 *  @param certhash Hash of user certificate, as used by murmur internally when matching.
 		 *  @param certstrong True if certificate was valid and signed by a trusted CA.
 		 *  @param newname Set this to change the username from the supplied one.
 		 *  @param groups List of groups on the root channel that the user will be added to for the duration of the connection.
@@ -398,7 +389,7 @@ module MumbleServer
 		idempotent int authenticate(string name, string pw, CertificateList certificates, string certhash, bool certstrong, out string newname, out GroupNameList groups);
 
 		/** Fetch information about a user. This is used to retrieve information like email address, keyhash etc. If you
-		 *  want the server to take care of this information itself, simply return false to fall through.
+		 *  want murmur to take care of this information itself, simply return false to fall through.
 		 *  @param id User id.
 		 *  @param info Information about user. This needs to include at least "name".
 		 *  @return true if information is present, false to fall through.
@@ -428,7 +419,7 @@ module MumbleServer
 	 *  and account updating.
 	 *  You do not need to implement this if all you want is authentication, you only need this if other scripts
 	 *  connected to the same server calls e.g. {@link Server.setTexture}.
-	 *  Almost all of these methods support fall through, meaning the server should continue the operation against its
+	 *  Almost all of these methods support fall through, meaning murmur should continue the operation against its
 	 *  own database.
 	 */
 	interface ServerUpdatingAuthenticator extends ServerAuthenticator {
@@ -477,16 +468,16 @@ module MumbleServer
 		idempotent bool isRunning() throws InvalidSecretException;
 
 		/** Start server. */
-		void start() throws ServerBootedException, ServerFailureException, InvalidSecretException, ReadOnlyModeException;
+		void start() throws ServerBootedException, ServerFailureException, InvalidSecretException;
 
 		/** Stop server.
-		 * Note: Server will be restarted on application restart unless explicitly disabled
+		 * Note: Server will be restarted on Murmur restart unless explicitly disabled
 		 *       with setConf("boot", false)
 		 */
-		void stop() throws ServerBootedException, InvalidSecretException, ReadOnlyModeException;
+		void stop() throws ServerBootedException, InvalidSecretException;
 
 		/** Delete server and all it's configuration. */
-		void delete() throws ServerBootedException, InvalidSecretException, ReadOnlyModeException;
+		void delete() throws ServerBootedException, InvalidSecretException;
 
 		/** Fetch the server id.
 		 *
@@ -513,41 +504,41 @@ module MumbleServer
 		 *
 		 * @param auth Authenticator object to perform subsequent authentications.
 		 */
-		void setAuthenticator(ServerAuthenticator *auth) throws ServerBootedException, InvalidCallbackException, InvalidSecretException, ReadOnlyModeException;
+		void setAuthenticator(ServerAuthenticator *auth) throws ServerBootedException, InvalidCallbackException, InvalidSecretException;
 
 		/** Retrieve configuration item.
 		 * @param key Configuration key.
 		 * @return Configuration value. If this is empty, see {@link Meta.getDefaultConf}
 		 */
-		idempotent string getConf(string key) throws InvalidSecretException, WriteOnlyException, ReadOnlyModeException;
+		idempotent string getConf(string key) throws InvalidSecretException, WriteOnlyException;
 
 		/** Retrieve all configuration items.
 		 * @return All configured values. If a value isn't set here, the value from {@link Meta.getDefaultConf} is used.
 		 */
-		idempotent ConfigMap getAllConf() throws InvalidSecretException, ReadOnlyModeException;
+		idempotent ConfigMap getAllConf() throws InvalidSecretException;
 
 		/** Set a configuration item.
 		 * @param key Configuration key.
 		 * @param value Configuration value.
 		 */
-		idempotent void setConf(string key, string value) throws InvalidSecretException, ReadOnlyModeException;
+		idempotent void setConf(string key, string value) throws InvalidSecretException;
 
 		/** Set superuser password. This is just a convenience for using {@link updateRegistration} on user id 0.
 		 * @param pw Password.
 		 */
-		idempotent void setSuperuserPassword(string pw) throws InvalidSecretException, ReadOnlyModeException;
+		idempotent void setSuperuserPassword(string pw) throws InvalidSecretException;
 
 		/** Fetch log entries.
 		 * @param first Lowest numbered entry to fetch. 0 is the most recent item.
 		 * @param last Last entry to fetch.
 		 * @return List of log entries.
 		 */
-		idempotent LogList getLog(int first, int last) throws InvalidSecretException, ReadOnlyModeException;
+		idempotent LogList getLog(int first, int last) throws InvalidSecretException;
 
 		/** Fetch length of log
 		 * @return Number of entries in log
 		 */
-		idempotent int getLogLen() throws InvalidSecretException, ReadOnlyModeException;
+		idempotent int getLogLen() throws InvalidSecretException;
 
 		/** Fetch all users. This returns all currently connected users on the server.
 		 * @return List of connected users.
@@ -582,7 +573,7 @@ module MumbleServer
 		 *  append to the returned list before calling this method.
 		 * @param bans List of bans.
 		 */
-		idempotent void setBans(BanList bans) throws ServerBootedException, InvalidSecretException, ReadOnlyModeException;
+		idempotent void setBans(BanList bans) throws ServerBootedException, InvalidSecretException;
 
 		/** Kick a user. The user is not banned, and is free to rejoin the server.
 		 * @param session Connection ID of user. See {@link User.session}.
@@ -656,19 +647,19 @@ module MumbleServer
 		 * @param state Channel state to set.
 		 * @see getChannelState
 		 */
-		idempotent void setChannelState(Channel state) throws ServerBootedException, InvalidChannelException, InvalidSecretException, NestingLimitException, ReadOnlyModeException;
+		idempotent void setChannelState(Channel state) throws ServerBootedException, InvalidChannelException, InvalidSecretException, NestingLimitException;
 
 		/** Remove a channel and all its subchannels.
 		 * @param channelid ID of Channel. See {@link Channel.id}.
 		 */
-		void removeChannel(int channelid) throws ServerBootedException, InvalidChannelException, InvalidSecretException, ReadOnlyModeException;
+		void removeChannel(int channelid) throws ServerBootedException, InvalidChannelException, InvalidSecretException;
 
 		/** Add a new channel.
 		 * @param name Name of new channel.
 		 * @param parent Channel ID of parent channel. See {@link Channel.id}.
 		 * @return ID of newly created channel.
 		 */
-		int addChannel(string name, int parent) throws ServerBootedException, InvalidChannelException, InvalidSecretException, NestingLimitException, ReadOnlyModeException;
+		int addChannel(string name, int parent) throws ServerBootedException, InvalidChannelException, InvalidSecretException, NestingLimitException;
 
 		/** Send text message to channel or a tree of channels.
 		 * @param channelid Channel ID of channel to send to. See {@link Channel.id}.
@@ -692,7 +683,7 @@ module MumbleServer
 		 * @param groups List of groups on the channel.
 		 * @param inherit Should this channel inherit ACLs from the parent channel?
 		 */
-		idempotent void setACL(int channelid, ACLList acls, GroupList groups, bool inherit) throws ServerBootedException, InvalidChannelException, InvalidSecretException, ReadOnlyModeException;
+		idempotent void setACL(int channelid, ACLList acls, GroupList groups, bool inherit) throws ServerBootedException, InvalidChannelException, InvalidSecretException;
 
 		/** Temporarily add a user to a group on a channel. This state is not saved, and is intended for temporary memberships.
 		 * @param channelid Channel ID of channel to add to. See {@link Channel.id}.
@@ -732,37 +723,37 @@ module MumbleServer
 		 * @param info Information about new user. Must include at least "name".
 		 * @return The ID of the user. See {@link RegisteredUser.userid}.
 		 */
-		int registerUser(UserInfoMap info) throws ServerBootedException, InvalidUserException, InvalidSecretException, ReadOnlyModeException;
+		int registerUser(UserInfoMap info) throws ServerBootedException, InvalidUserException, InvalidSecretException;
 
 		/** Remove a user registration.
 		 * @param userid ID of registered user. See {@link RegisteredUser.userid}.
 		 */
-		void unregisterUser(int userid) throws ServerBootedException, InvalidUserException, InvalidSecretException, ReadOnlyModeException;
+		void unregisterUser(int userid) throws ServerBootedException, InvalidUserException, InvalidSecretException;
 
 		/** Update the registration for a user. You can use this to set the email or password of a user,
 		 * and can also use it to change the user's name.
 		 * @param registration Updated registration record.
 		 */
-		idempotent void updateRegistration(int userid, UserInfoMap info) throws ServerBootedException, InvalidUserException, InvalidSecretException, ReadOnlyModeException;
+		idempotent void updateRegistration(int userid, UserInfoMap info) throws ServerBootedException, InvalidUserException, InvalidSecretException;
 
 		/** Fetch registration for a single user.
 		 * @param userid ID of registered user. See {@link RegisteredUser.userid}.
 		 * @return Registration record.
 		 */
-		idempotent UserInfoMap getRegistration(int userid) throws ServerBootedException, InvalidUserException, InvalidSecretException, ReadOnlyModeException;
+		idempotent UserInfoMap getRegistration(int userid) throws ServerBootedException, InvalidUserException, InvalidSecretException;
 
 		/** Fetch a group of registered users.
 		 * @param filter Substring of user name. If blank, will retrieve all registered users.
 		 * @return List of registration records.
 		 */
-		idempotent NameMap getRegisteredUsers(string filter) throws ServerBootedException, InvalidSecretException, ReadOnlyModeException;
+		idempotent NameMap getRegisteredUsers(string filter) throws ServerBootedException, InvalidSecretException;
 
 		/** Verify the password of a user. You can use this to verify a user's credentials.
 		 * @param name User name. See {@link RegisteredUser.name}.
 		 * @param pw User password.
 		 * @return User ID of registered user (See {@link RegisteredUser.userid}), -1 for failed authentication or -2 for unknown usernames.
 		 */
-		idempotent int verifyPassword(string name, string pw) throws ServerBootedException, InvalidSecretException, ReadOnlyModeException;
+		idempotent int verifyPassword(string name, string pw) throws ServerBootedException, InvalidSecretException;
 
 		/** Fetch user texture. Textures are stored as zlib compress()ed 600x60 32-bit BGRA data.
 		 * @param userid ID of registered user. See {@link RegisteredUser.userid}.
@@ -774,7 +765,7 @@ module MumbleServer
 		 * @param userid ID of registered user. See {@link RegisteredUser.userid}.
 		 * @param tex Texture (as a Byte-Array) to set for the user, or an empty texture to remove the existing texture.
 		 */
-		idempotent void setTexture(int userid, Texture tex) throws ServerBootedException, InvalidUserException, InvalidTextureException, InvalidSecretException, ReadOnlyModeException;
+		idempotent void setTexture(int userid, Texture tex) throws ServerBootedException, InvalidUserException, InvalidTextureException, InvalidSecretException;
 
 		/** Get virtual server uptime.
 		 * @return Uptime of the virtual server in seconds
@@ -800,65 +791,65 @@ module MumbleServer
 		 *  - The certificate and/or private key do not contain RSA keys.
 		 *  - The certificate is not usable with the given private key.
 		 */
-		 idempotent void updateCertificate(string certificate, string privateKey, string passphrase) throws ServerBootedException, InvalidSecretException, InvalidInputDataException, ReadOnlyModeException;
+		 idempotent void updateCertificate(string certificate, string privateKey, string passphrase) throws ServerBootedException, InvalidSecretException, InvalidInputDataException;
 
 		 /**
 		  * Makes the given user start listening to the given channel.
 		  * @param userid The ID of the user
 		  * @param channelid The ID of the channel
 		  */
-		 idempotent void startListening(int userid, int channelid) throws ServerBootedException, InvalidUserException, ReadOnlyModeException;
+		 idempotent void startListening(int userid, int channelid);
 
 		 /**
 		  * Makes the given user stop listening to the given channel.
 		  * @param userid The ID of the user
 		  * @param channelid The ID of the channel
 		  */
-		 idempotent void stopListening(int userid, int channelid) throws ServerBootedException, InvalidUserException, ReadOnlyModeException;
+		 idempotent void stopListening(int userid, int channelid);
 
 		 /**
 		  * @param userid The ID of the user
 		  * @param channelid The ID of the channel
 		  * @returns Whether the given user is currently listening to the given channel
 		  */
-		 idempotent bool isListening(int userid, int channelid) throws ServerBootedException, InvalidUserException, InvalidSecretException;
+		 idempotent bool isListening(int userid, int channelid);
 
 		 /**
 		  * @param userid The ID of the user
 		  * @returns An ID-list of channels the given user is listening to
 		  */
-		 idempotent IntList getListeningChannels(int userid) throws ServerBootedException, InvalidSecretException, InvalidUserException;
+		 idempotent IntList getListeningChannels(int userid);
 
 		 /**
 		  * @param channelid The ID of the channel
 		  * @returns An ID-list of users listening to the given channel
 		  */
-		 idempotent IntList getListeningUsers(int channelid) throws ServerBootedException, InvalidSecretException, InvalidChannelException;
+		 idempotent IntList getListeningUsers(int channelid);
 
 		 /**
 		  * @param channelid The ID of the channel
 		  * @param userid The ID of the user
 		  * @returns The volume adjustment set for a listener of the given user in the given channel
 		  */
-		 idempotent float getListenerVolumeAdjustment(int channelid, int userid) throws ServerBootedException, InvalidUserException, InvalidChannelException;
+		 idempotent float getListenerVolumeAdjustment(int channelid, int userid);
 
 		 /**
 		  * Sets the volume adjustment set for a listener of the given user in the given channel
 		  * @param channelid The ID of the channel
 		  * @param userid The ID of the user
 		  */
-		 idempotent void setListenerVolumeAdjustment(int channelid, int userid, float volumeAdjustment) throws ServerBootedException, InvalidSecretException, InvalidChannelException, InvalidUserException, ReadOnlyModeException;
+		 idempotent void setListenerVolumeAdjustment(int channelid, int userid, float volumeAdjustment);
 
 		 /**
 		  * @param receiverUserIDs list of IDs of the users the message shall be sent to
 		  */
-		 idempotent void sendWelcomeMessage(IdList receiverUserIDs) throws ServerBootedException, InvalidSecretException, InvalidUserException;
+		 idempotent void sendWelcomeMessage(IdList receiverUserIDs);
 	};
 
 	/** Callback interface for Meta. You can supply an implementation of this to receive notifications
 	 *  when servers are stopped or started.
 	 *  If an added callback ever throws an exception or goes away, it will be automatically removed.
-	 *  Please note that all callbacks are done asynchronously; the server does not wait for the callback to
+	 *  Please note that all callbacks are done asynchronously; murmur does not wait for the callback to
 	 *  complete before continuing processing.
 	 *  @see ServerCallback
 	 *  @see Meta.addCallback
@@ -911,7 +902,7 @@ module MumbleServer
 		 */
 		idempotent ConfigMap getDefaultConf() throws InvalidSecretException;
 
-		/** Fetch version of the server. 
+		/** Fetch version of Murmur. 
 		 * @param major Major version.
 		 * @param minor Minor version.
 		 * @param patch Patchlevel.
@@ -932,8 +923,8 @@ module MumbleServer
 		 */
 		void removeCallback(MetaCallback *cb) throws InvalidCallbackException, InvalidSecretException;
 		
-		/** Get the server's uptime.
-		 * @return Uptime of the server in seconds
+		/** Get murmur uptime.
+		 * @return Uptime of murmur in seconds
 		 */
 		idempotent int getUptime();
 
@@ -946,15 +937,5 @@ module MumbleServer
 		 * @return Checksum dict
 		 */
 		idempotent Ice::SliceChecksumDict getSliceChecksums();
-
-		 /**
-		  * @returns The state the underlying database is currently assumed to be in
-		  */
-		 idempotent DBState getAssumedDatabaseState() throws InvalidSecretException;
-
-		 /**
-		  * Sets the assumed state of the underlying database
-		  */
-		 idempotent void setAssumedDatabaseState(DBState state) throws InvalidSecretException, ReadOnlyModeException;
 	};
 };

@@ -13,6 +13,7 @@ class Matrix:
     ):
         self._domain = domain
         self._client_api = f"{server}/_matrix/client/v3"
+        self._media_api = f"{server}/_matrix/client/v1/media"
 
         self._session = requests.Session()
         self._session.headers.update({"Authorization": f"Bearer {bearer_token}"})
@@ -93,6 +94,11 @@ class Matrix:
             f"{self._client_api}/profile/{user_id}",
         )
         return res.ok
+
+    def download_image(self, media_id: str) -> bytes:
+        url = f"{self._media_api}/download/{self._domain}/{media_id}"
+        img = self._session.get(url).content
+        return img
 
     def _local_user_id(self, name: str) -> str:
         return f"@{name}:{self._domain}"

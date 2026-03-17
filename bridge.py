@@ -100,11 +100,11 @@ class Bridge:
             return False
         return True
 
-    def _on_matrix_img(self, _, sender: str, image_url: str, image_name: str):
+    def _on_matrix_img(self, sender: str, image_name: str, media_id: str):
         try:
-            img = requests.get(image_url).content
+            img = self._matrix.download_image(media_id)
         except requests.exceptions.RequestException:
-            logging.exception("error while getting media")
+            logging.exception("error while downloading image")
             return
 
         extension = "png" if ".png" in image_name else "jpeg"

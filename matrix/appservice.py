@@ -98,7 +98,7 @@ class Appservice(Matrix):
             return
 
         media_id = mxc_url.split("/")[-1]
-        self._on_img_cb(room_id, sender, image_name, media_id)
+        self._on_img_cb(sender, image_name, media_id)
 
     def _handle_event(self, event):
         if event["type"] != "m.room.message":

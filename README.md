@@ -1,10 +1,12 @@
-# MandM-bridge
+## ⚠ Moved to: https://codeberg.org/karlpip/MandM-bridge
+
+## MandM-bridge
 
 Bridges between a Murmur server and a matrix channel.\
 ICE is used to communicate with the murmur server, ~~matrix-nio is used for matrix~~ an appservice is used for matrix.
 
 
-## Features
+### Features
 
 - [X] Bridge text messages.
 - [X] Implement optional message handlers to easily modify, filter and save messages before bridging.
@@ -21,11 +23,11 @@ ICE is used to communicate with the murmur server, ~~matrix-nio is used for matr
   - [X] Message puppeting
   - [X] Presence puppeting with joining and leaving the bridge room.
 
-## Setup
+### Setup
 
 Clone the repository and checkout the latest tag.
 
-### Python virtual environment (optional)
+#### Python virtual environment (optional)
 
 To create a python virtual environment execute the following in the repo directory: \
 `python3 -m venv env`
@@ -33,12 +35,12 @@ To create a python virtual environment execute the following in the repo directo
 And then activate the environment with: \
 `source env/bin/activate`
 
-### Dependencies
+#### Dependencies
 
 Install the needed python packages with: \
 `pip3 install -r requirements.txt`
 
-### Configuration
+#### Configuration
 
 Fill in the bridge.conf as described in the comments.
 
@@ -54,14 +56,14 @@ To send bigger images to murmur you have to set: \
 `imagemessagelength=0` \
 In your mumble-server.ini. This disables the length limit of messages containing images.
 
-### Running
+#### Running
 
 You can execute the bot like this: \
 `python3 main.py`
 
 Or to run the script as a service you can use the provided service file under `examples/`, dont forget to set the paths accordingly.
 
-## MIT License
+### MIT License
 
 Copyright 2022 Karl Piplies
 
